@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionnaire de Séries Pokémon TCG</title>
+    <!-- Chargement de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuration de la police Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            min-height: 100vh;
+        }
+        /* Style pour masquer le scrollbar sur certains navigateurs */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 flex flex-col items-center">
+
+    <div class="w-full max-w-xl bg-white shadow-2xl rounded-xl p-6 sm:p-8 space-y-6">
+
+        <h1 class="text-3xl font-bold text-gray-800 text-center border-b-2 border-indigo-500 pb-3">
+            Collection de Séries Pokémon
+        </h1>
+        
+        <!-- Affichage de l'ID Utilisateur pour le partage -->
+        <p class="text-sm text-center text-gray-500">
+            Votre ID de session (pour la persistance): <span id="user-id-display" class="font-mono text-xs bg-gray-100 p-1 rounded">Chargement...</span>
+        </p>
+
+        <!-- Section d'ajout de série -->
+        <div class="space-y-4 pt-4 border-t border-gray-200">
+            <h2 class="text-xl font-semibold text-indigo-700">Ajouter une nouvelle Série</h2>
+            
+            <div id="loading-status" class="text-center text-indigo-500 hidden">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-500 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Chargement des séries Pokémon TCG...
+            </div>
+            
+            <div id="add-form" class="space-y-3 hidden">
+                <select id="series-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition duration-150">
+                    <!-- Les options seront chargées ici par JavaScript -->
+                    <option value="" disabled selected>Sélectionnez une série...</option>
+                </select>
+                
+                <button id="add-button" disabled class="w-full bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-indigo-600 transition duration-300 disabled:opacity-50">
+                    Ajouter à ma Collection
+                </button>
+            </div>
+            
+            <p id="error-message" class="text-red-500 text-sm hidden">
+                <!-- Les messages d'erreur seront affichés ici -->
+            </p>
+        </div>
+
+        <!-- Section de la collection personnelle -->
+        <div class="space-y-4 pt-6 border-t border-gray-200">
+            <h2 class="text-xl font-semibold text-green-700">Ma Collection Personnelle</h2>
+            
+            <div id="collection-list" class="space-y-3 max-h-80 overflow-y-auto no-scrollbar border p-3 rounded-lg bg-gray-50">
+                <p id="empty-message" class="text-gray-500 text-center italic">
+                    Votre collection est vide. Ajoutez une série ci-dessus !
+                </p>
+                <!-- Les séries ajoutées seront affichées ici -->
+            </div>
+        </div>
+        
+        <!-- Modal pour la confirmation (remplace alert/confirm) -->
+        <div id="modal-container" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden" role="dialog" aria-modal="true">
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
+                <h3 class="text-lg font-bold text-red-600 mb-4">Confirmation de Suppression</h3>
+                <p id="modal-text" class="text-gray-700 mb-6">Êtes-vous sûr de vouloir supprimer cette série ?</p>
+                <div class="flex justify-end space-x-3">
+                    <button id="modal-cancel" class="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition">Annuler</button>
+                    <button id="modal-confirm" class="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">Supprimer</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Firebase Imports and Setup -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- Configuration Firebase ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db = null;
+        let auth = null;
+        let currentUserId = null;
+        let isAuthReady = false;
+
+        // Éléments DOM
+        const loadingStatusEl = document.getElementById('loading-status');
+        const addFormEl = document.getElementById('add-form');
+        const seriesSelectEl = document.getElementById('series-select');
+        const addButtonEl = document.getElementById('add-button');
+        const collectionListEl = document.getElementById('collection-list');
+        const emptyMessageEl = document.getElementById('empty-message');
+        const errorMsgEl = document.getElementById('error-message');
+        const userIdDisplayEl = document.getElementById('user-id-display');
+        const modalContainerEl = document.getElementById('modal-container');
+        const modalConfirmEl = document.getElementById('modal-confirm');
+        const modalCancelEl = document.getElementById('modal-cancel');
+        const modalTextEl = document.getElementById('modal-text');
+
+        // Variables d'état
+        let allPokemonSeries = [];
+        let userSeriesMap = {}; // Pour vérifier rapidement si une série est déjà ajoutée
+        let pendingDeletionDocId = null; // ID du document à supprimer
+
+        // Fonction pour afficher une erreur temporaire
+        function showMessage(element, message, isError = true) {
+            element.textContent = message;
+            element.classList.remove('hidden');
+            element.classList.add(isError ? 'text-red-500' : 'text-green-500');
+            setTimeout(() => {
+                element.classList.add('hidden');
+            }, 5000);
+        }
+
+        // --- 1. Initialisation et Authentification Firebase ---
+        try {
+            if (Object.keys(firebaseConfig).length > 0) {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('debug'); // Afficher les logs Firestore
+            } else {
+                showMessage(errorMsgEl, "Erreur: La configuration Firebase est manquante. L'application fonctionnera sans persistance.", true);
+            }
+        } catch (e) {
+            console.error("Erreur d'initialisation Firebase:", e);
+            showMessage(errorMsgEl, "Erreur d'initialisation Firebase. Vérifiez la console.", true);
+        }
+
+        if (db && auth) {
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUserId = user.uid;
+                } else {
+                    if (initialAuthToken) {
+                        try {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } catch (e) {
+                            console.warn("Échec de la connexion par token, connexion anonyme...");
+                            await signInAnonymously(auth);
+                            currentUserId = auth.currentUser.uid;
+                        }
+                    } else {
+                        await signInAnonymously(auth);
+                        currentUserId = auth.currentUser.uid;
+                    }
+                }
+                
+                isAuthReady = true;
+                userIdDisplayEl.textContent = currentUserId;
+                
+                // Une fois l'authentification prête, charger les données
+                fetchPokemonSeries();
+                setupSeriesListener();
+            });
+        } else {
+            // Fallback si Firebase n'a pas pu être initialisé
+            userIdDisplayEl.textContent = 'Non disponible';
+            fetchPokemonSeries();
+        }
+
+        // --- 2. Fonctions API Pokémon TCG ---
+        async function fetchPokemonSeries() {
+            loadingStatusEl.classList.remove('hidden');
+            addFormEl.classList.add('hidden');
+            errorMsgEl.classList.add('hidden');
+
+            const API_URL = 'https://api.pokemontcg.io/v2/sets';
+
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                // Filtrer et trier par date de sortie (plus récent en premier)
+                allPokemonSeries = data.data
+                    .filter(set => set.releaseDate) // S'assurer qu'il y a une date
+                    .sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate));
+
+                renderSeriesOptions();
+                addFormEl.classList.remove('hidden');
+                addButtonEl.disabled = false;
+                loadingStatusEl.classList.add('hidden');
+
+            } catch (error) {
+                console.error("Erreur de récupération des séries Pokémon:", error);
+                loadingStatusEl.classList.add('hidden');
+                showMessage(errorMsgEl, "Impossible de charger les séries TCG. Veuillez réessayer plus tard.", true);
+            }
+        }
+
+        function renderSeriesOptions() {
+            seriesSelectEl.innerHTML = '<option value="" disabled selected>Sélectionnez une série...</option>';
+            allPokemonSeries.forEach(series => {
+                const option = document.createElement('option');
+                option.value = series.id;
+                option.textContent = `${series.name} (${series.id}) - Sortie: ${series.releaseDate}`;
+                seriesSelectEl.appendChild(option);
+            });
+        }
+
+        // --- 3. Fonctions Firestore (Lecture en temps réel) ---
+        function getCollectionPath() {
+            return `artifacts/${appId}/users/${currentUserId}/pokemon_series`;
+        }
+
+        function setupSeriesListener() {
+            if (!isAuthReady || !db) return;
+
+            const seriesCollectionRef = collection(db, getCollectionPath());
+            const q = query(seriesCollectionRef);
+            
+            onSnapshot(q, (snapshot) => {
+                userSeriesMap = {}; // Réinitialiser la map
+                const seriesList = [];
+                
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const series = { 
+                        ...data, 
+                        docId: doc.id // Stocker l'ID du document Firestore
+                    };
+                    seriesList.push(series);
+                    userSeriesMap[data.id] = series; // Utiliser l'ID de la série TCG comme clé
+                });
+                
+                // Trier les séries ajoutées par nom pour un affichage cohérent
+                seriesList.sort((a, b) => a.name.localeCompare(b.name));
+
+                renderUserSeriesList(seriesList);
+            }, (error) => {
+                console.error("Erreur de l'écouteur Firestore:", error);
+                showMessage(errorMsgEl, "Erreur de connexion à la base de données de votre collection.", true);
+            });
+        }
+
+        // --- 4. Fonctions Firestore (Écriture) ---
+
+        async function addSeries(seriesId) {
+            if (!isAuthReady || !db) {
+                showMessage(errorMsgEl, "Authentification en cours ou Firebase non initialisé.", true);
+                return;
+            }
+
+            const selectedSeries = allPokemonSeries.find(s => s.id === seriesId);
+            if (!selectedSeries) return;
+
+            if (userSeriesMap[seriesId]) {
+                showMessage(errorMsgEl, `La série "${selectedSeries.name}" est déjà dans votre collection.`, true);
+                return;
+            }
+
+            try {
+                // Créer un document avec les données pertinentes
+                const seriesData = {
+                    id: selectedSeries.id,
+                    name: selectedSeries.name,
+                    releaseDate: selectedSeries.releaseDate,
+                    totalCards: selectedSeries.total,
+                    addedAt: serverTimestamp() // Timestamp du serveur
+                };
+                
+                const seriesCollectionRef = collection(db, getCollectionPath());
+                // Utiliser setDoc avec un ID de document basé sur l'ID de la série pour éviter les doublons
+                // Note : Pour une collection simple, addDoc ou setDoc avec un ID auto-généré est souvent suffisant, mais ici on veut garantir l'unicité par ID TCG.
+                const docRef = doc(seriesCollectionRef, seriesId); 
+                await setDoc(docRef, seriesData);
+
+                showMessage(errorMsgEl, `Série "${selectedSeries.name}" ajoutée avec succès!`, false);
+                seriesSelectEl.value = ""; // Réinitialiser la sélection
+
+            } catch (error) {
+                console.error("Erreur lors de l'ajout de la série:", error);
+                showMessage(errorMsgEl, "Échec de l'ajout de la série. Vérifiez les permissions.", true);
+            }
+        }
+
+        async function removeSeries(docId) {
+            if (!isAuthReady || !db) {
+                showMessage(errorMsgEl, "Authentification en cours ou Firebase non initialisé.", true);
+                return;
+            }
+
+            try {
+                const docRef = doc(db, getCollectionPath(), docId);
+                await deleteDoc(docRef);
+                showMessage(errorMsgEl, "Série supprimée de votre collection.", false);
+            } catch (error) {
+                console.error("Erreur lors de la suppression de la série:", error);
+                showMessage(errorMsgEl, "Échec de la suppression de la série. Vérifiez les permissions.", true);
+            } finally {
+                closeModal();
+            }
+        }
+
+        // --- 5. Rendu de la Liste Personnelle ---
+        function renderUserSeriesList(seriesList) {
+            collectionListEl.innerHTML = ''; // Nettoyer la liste
+            
+            if (seriesList.length === 0) {
+                emptyMessageEl.classList.remove('hidden');
+                return;
+            }
+            emptyMessageEl.classList.add('hidden');
+
+            seriesList.forEach(series => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition duration-200';
+                
+                const info = document.createElement('div');
+                info.innerHTML = `
+                    <p class="font-bold text-gray-800">${series.name}</p>
+                    <p class="text-sm text-gray-600">
+                        Total Cartes: ${series.totalCards} | Sortie: ${series.releaseDate}
+                    </p>
+                `;
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'text-red-500 hover:text-red-700 p-2 rounded-full transition';
+                deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
+                    </svg>`;
+                deleteButton.title = `Supprimer ${series.name}`;
+                deleteButton.addEventListener('click', () => openModal(series));
+
+                div.appendChild(info);
+                div.appendChild(deleteButton);
+                collectionListEl.appendChild(div);
+            });
+        }
+        
+        // --- 6. Logique Modale (Confirmation) ---
+        function openModal(series) {
+            pendingDeletionDocId = series.docId;
+            modalTextEl.innerHTML = `Êtes-vous sûr de vouloir supprimer définitivement la série <span class="font-bold">${series.name}</span> de votre collection ?`;
+            modalContainerEl.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            pendingDeletionDocId = null;
+            modalContainerEl.classList.add('hidden');
+        }
+
+        // Gestionnaire d'événement pour la confirmation
+        modalConfirmEl.addEventListener('click', () => {
+            if (pendingDeletionDocId) {
+                removeSeries(pendingDeletionDocId);
+            }
+        });
+
+        // Gestionnaire d'événement pour l'annulation
+        modalCancelEl.addEventListener('click', closeModal);
+
+
+        // --- 7. Gestionnaires d'Événements de l'Application ---
+        addButtonEl.addEventListener('click', () => {
+            const selectedId = seriesSelectEl.value;
+            if (selectedId) {
+                addSeries(selectedId);
+            } else {
+                showMessage(errorMsgEl, "Veuillez sélectionner une série avant d'ajouter.", true);
+            }
+        });
+
+        seriesSelectEl.addEventListener('change', () => {
+             // Cacher l'erreur lors d'une nouvelle sélection
+            errorMsgEl.classList.add('hidden');
+        });
+        
+        // Démarrer l'application
+        if (!db || !auth) {
+            fetchPokemonSeries();
+        }
+    </script>
+</body>
+</html>
+
