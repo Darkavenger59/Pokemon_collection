@@ -7,7 +7,7 @@
     <!-- Chargement de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Ajout du manifeste PWA pour l'installation sur l'écran d'accueil -->
+    <!-- L'application est maintenant déclarée comme une PWA -->
     <link rel="manifest" href="/manifest.json">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
@@ -101,17 +101,17 @@
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- Configuration Firebase (VOTRE CONFIGURATION) ---
-        // J'ai retiré les imports en double et les variables de l'environnement Canvas.
         
         const appId = 'pokemon-collection-public-id'; // ID d'application par défaut pour le chemin Firestore
         
+        // VOS CLÉS INSÉRÉES ICI
         const firebaseConfig = {
           apiKey: "AIzaSyDcHQZc21k4zeFqv92EWr_Jf4Qe58h9COg",
           authDomain: "pokemon-tcg-collection-6aa1b.firebaseapp.com",
           projectId: "pokemon-tcg-collection-6aa1b",
           storageBucket: "pokemon-tcg-collection-6aa1b.firebasestorage.app",
           messagingSenderId: "480822280087",
-          appId: "1:480822280087:web:c880758db2cea43d660ed2"
+          appId: "1:480822280087:web:c880755db2cea43d660ed2"
         };
         
         let db = null;
@@ -119,7 +119,7 @@
         let currentUserId = null;
         let isAuthReady = false;
         
-        // Éléments DOM
+        // Éléments DOM (définition simplifiée)
         const loadingStatusEl = document.getElementById('loading-status');
         const addFormEl = document.getElementById('add-form');
         const seriesSelectEl = document.getElementById('series-select');
@@ -148,7 +148,7 @@
             }, 5000);
         }
 
-        // --- 1. Initialisation et Authentification Firebase SIMPLIFIÉE ---
+        // --- 1. Initialisation et Authentification Firebase ---
         try {
             // Initialisation unique
             const app = initializeApp(firebaseConfig);
@@ -172,35 +172,47 @@
                     setupSeriesListener();
                 })
                 .catch((error) => {
-                    console.error("Erreur de connexion anonyme Firebase. L'application ne peut pas enregistrer de données.", error);
+                    console.error("Erreur de connexion anonyme Firebase:", error);
                     userIdDisplayEl.textContent = 'Erreur Auth';
-                    showMessage(errorMsgEl, "Échec de la connexion (Auth). Sauvegarde impossible. Avez-vous activé l'authentification Anonyme dans Firebase?", true);
+                    showMessage(errorMsgEl, "Échec de la connexion (Auth). Sauvegarde impossible. Avez-vous activé l'authentification Anonyme?", true);
                     isAuthReady = false;
                     fetchPokemonSeries(); 
                 });
 
         } else {
-            // Si l'initialisation a échoué
+            // Si l'initialisation a échoué (les clés sont peut-être fausses)
             userIdDisplayEl.textContent = 'Non disponible';
             fetchPokemonSeries();
         }
 
 
-        // --- 2. Fonctions API Pokémon TCG ---
+        // --- 2. Fonctions API Pokémon TCG (AVEC PROXY CORS) ---
         async function fetchPokemonSeries() {
             loadingStatusEl.classList.remove('hidden');
             addFormEl.classList.add('hidden');
             errorMsgEl.classList.add('hidden');
 
+            // Utilisation d'un proxy pour éviter les problèmes de CORS
             const API_URL = 'https://api.pokemontcg.io/v2/sets';
+            const CORS_PROXY = 'https://tcgproxy.netlify.app/proxy/'; 
+            
+            // La requête passe par le proxy
+            const FETCH_URL = `${CORS_PROXY}${encodeURIComponent(API_URL)}`;
 
             try {
-                const response = await fetch(API_URL);
+                const response = await fetch(FETCH_URL);
+                
                 if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
+                    throw new Error(`Erreur HTTP: ${response.status} - Le serveur API (via proxy) ne répond pas correctement.`);
                 }
+                
                 const data = await response.json();
                 
+                // Vérification si les données sont vides ou mal formées
+                if (!data || !data.data || data.data.length === 0) {
+                     throw new Error("L'API a répondu, mais n'a retourné aucune série de cartes.");
+                }
+
                 allPokemonSeries = data.data
                     .filter(set => set.releaseDate) 
                     .sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate));
@@ -211,9 +223,19 @@
                 loadingStatusEl.classList.add('hidden');
 
             } catch (error) {
-                console.error("Erreur de récupération des séries Pokémon:", error);
+                console.error("Erreur critique de récupération des séries Pokémon:", error);
                 loadingStatusEl.classList.add('hidden');
-                showMessage(errorMsgEl, "Impossible de charger les séries TCG. Veuillez réessayer plus tard.", true);
+                
+                // Message d'erreur plus spécifique
+                let msg = "Impossible de charger les séries TCG. ";
+                if (error.message.includes("HTTP")) {
+                    msg += error.message;
+                } else if (error.message.includes("Failed to fetch")) {
+                    msg += "Problème de réseau (DNS, CORS ou timeout). Vérifiez votre connexion.";
+                } else {
+                    msg += error.message;
+                }
+                showMessage(errorMsgEl, msg, true);
             }
         }
 
@@ -229,14 +251,11 @@
 
         // --- 3. Fonctions Firestore (Lecture en temps réel) ---
         function getCollectionPath() {
-            // Chemin simplifié et public pour ce type d'hébergement. 
-            // Ce chemin correspond aux règles de sécurité que j'ai fournies si elles ont été correctement appliquées : public_collections/{userId}/pokemon_series
             return `public_collections/${currentUserId}/pokemon_series`;
         }
 
         function setupSeriesListener() {
             if (!isAuthReady || !db || !currentUserId) {
-                console.warn("Firestore non prêt ou pas d'ID utilisateur, l'écouteur n'est pas activé.");
                 return;
             }
 
@@ -261,8 +280,8 @@
 
                 renderUserSeriesList(seriesList);
             }, (error) => {
-                console.error("Erreur de l'écouteur Firestore. Les données ne seront pas chargées/sauvegardées.", error);
-                showMessage(errorMsgEl, "Erreur de connexion à la base de données de votre collection. Vérifiez les règles Firestore.", true);
+                console.error("Erreur de l'écouteur Firestore:", error);
+                showMessage(errorMsgEl, "Erreur de connexion à la base de données de votre collection.", true);
             });
         }
 
@@ -292,7 +311,6 @@
                 };
                 
                 const seriesCollectionRef = collection(db, getCollectionPath());
-                // Utilise l'ID de la série comme ID du document pour la facilité de vérification
                 const docRef = doc(seriesCollectionRef, seriesId); 
                 await setDoc(docRef, seriesData);
 
@@ -312,7 +330,6 @@
             }
 
             try {
-                // docId est l'ID de la série (utilisé comme ID du document)
                 const docRef = doc(db, getCollectionPath(), docId);
                 await deleteDoc(docRef);
                 showMessage(errorMsgEl, "Série supprimée de votre collection.", false);
@@ -352,7 +369,6 @@
                     <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
                     </svg>`;
                 deleteButton.title = `Supprimer ${series.name}`;
-                // Passe l'ID de la série/document à la modale
                 deleteButton.addEventListener('click', () => openModal({ ...series, docId: series.id }));
 
                 div.appendChild(info);
@@ -363,7 +379,6 @@
         
         // --- 6. Logique Modale (Confirmation) ---
         function openModal(series) {
-            // Utilise l'ID de la série (qui est aussi l'ID du document)
             pendingDeletionDocId = series.docId; 
             modalTextEl.innerHTML = `Êtes-vous sûr de vouloir supprimer définitivement la série <span class="font-bold">${series.name}</span> de votre collection ?`;
             modalContainerEl.classList.remove('hidden');
@@ -374,16 +389,13 @@
             modalContainerEl.classList.add('hidden');
         }
 
-        // Gestionnaire d'événement pour la confirmation
         modalConfirmEl.addEventListener('click', () => {
             if (pendingDeletionDocId) {
                 removeSeries(pendingDeletionDocId);
             }
         });
 
-        // Gestionnaire d'événement pour l'annulation
         modalCancelEl.addEventListener('click', closeModal);
-
 
         // --- 7. Gestionnaires d'Événements de l'Application ---
         addButtonEl.addEventListener('click', () => {
@@ -398,8 +410,19 @@
         seriesSelectEl.addEventListener('change', () => {
              errorMsgEl.classList.add('hidden');
         });
-        
-        // L'appel initial est géré par la logique d'authentification ci-dessus
+
+        // --- 8. Enregistrement du Service Worker ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker enregistré avec succès:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Échec de l\'enregistrement du ServiceWorker:', error);
+                    });
+            });
+        }
     </script>
 </body>
 </html>
