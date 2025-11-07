@@ -7,8 +7,9 @@
     <!-- Chargement de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- L'application est maintenant déclarée comme une PWA -->
-    <link rel="manifest" href="/manifest.json">
+    <!-- MANIFESTE INTÉGRÉ (SOLUTION CONTRE LES ERREURS DE CHEMINS) -->
+    <link rel="manifest" id="pwa-manifest" href="data:application/json;base64,eyJpY29ucyI6W3sic2l6ZXMiOiIxOTJ4MTkyIiwic3JjIjoiaHR0cHM6Ly9wbGFjZWhvbGQuY28vMTkyeDE5Mi80ZjQ2ZTUvZmZmZmZmP3RleHQ9UFdBIiwiZGVuc2l0eSI6IjEuMCIsInR5cGUiOiJpbWFnZS9wbmcifSx7InNpemVzIjoiNTEyeDUxMiIsInNyYyI6Imh0dHBzOi8vcGxhY2Vob2xkLmNvLzUxMng1MTIvNGY0NmU1L2ZmZmZmZj90ZXh0PVBXQSIsImRlbnNpdHkiOiIxLjAiLCJ0eXBlIjoiaW1hZ2UvcG5nIn1dLCJuYW1lIjoiQ29sbGVjdGlvbiBUQ0cgUG9rXzEiLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsInN0YXJ0X3VybCI6Ii9pbmRleC5odG1sIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYiLCJ0aGVtZV9jb2xvciI6IiM0ZjQ2ZTUifQ==">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         body {
@@ -411,19 +412,10 @@
              errorMsgEl.classList.add('hidden');
         });
 
-        // --- 8. Enregistrement du Service Worker ---
+        // --- 8. Enregistrement du Service Worker (Intégré pour éviter les erreurs de chemin) ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => {
-                        console.log('ServiceWorker enregistré avec succès:', registration.scope);
-                    })
-                    .catch(error => {
-                        console.error('Échec de l\'enregistrement du ServiceWorker:', error);
-                    });
-            });
-        }
-    </script>
-</body>
-</html>
-
+                // Service Worker minimal intégré pour l'installation PWA
+                const swContent = `
+                    const CACHE_NAME = 'pokemon-collection-cache-v1';
+                    const urlsToCache = ['/', '/index.html
