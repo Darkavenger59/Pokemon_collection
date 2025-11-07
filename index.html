@@ -6,7 +6,9 @@
     <title>Gestionnaire de Séries Pokémon TCG</title>
     <!-- Chargement de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configuration de la police Inter -->
+    
+    <!-- NOUVEAU: Ajout du manifeste PWA pour l'installation sur l'écran d'accueil -->
+    <link rel="manifest" href="/manifest.json">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
         body {
@@ -124,8 +126,8 @@
 
         // Variables d'état
         let allPokemonSeries = [];
-        let userSeriesMap = {}; // Pour vérifier rapidement si une série est déjà ajoutée
-        let pendingDeletionDocId = null; // ID du document à supprimer
+        let userSeriesMap = {}; 
+        let pendingDeletionDocId = null; 
 
         // Fonction pour afficher une erreur temporaire
         function showMessage(element, message, isError = true) {
@@ -143,7 +145,7 @@
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-                setLogLevel('debug'); // Afficher les logs Firestore
+                setLogLevel('debug'); 
             } else {
                 showMessage(errorMsgEl, "Erreur: La configuration Firebase est manquante. L'application fonctionnera sans persistance.", true);
             }
@@ -174,12 +176,11 @@
                 isAuthReady = true;
                 userIdDisplayEl.textContent = currentUserId;
                 
-                // Une fois l'authentification prête, charger les données
                 fetchPokemonSeries();
                 setupSeriesListener();
             });
         } else {
-            // Fallback si Firebase n'a pas pu être initialisé
+            currentUserId = 'Non disponible';
             userIdDisplayEl.textContent = 'Non disponible';
             fetchPokemonSeries();
         }
@@ -199,9 +200,8 @@
                 }
                 const data = await response.json();
                 
-                // Filtrer et trier par date de sortie (plus récent en premier)
                 allPokemonSeries = data.data
-                    .filter(set => set.releaseDate) // S'assurer qu'il y a une date
+                    .filter(set => set.releaseDate) 
                     .sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate));
 
                 renderSeriesOptions();
@@ -238,20 +238,19 @@
             const q = query(seriesCollectionRef);
             
             onSnapshot(q, (snapshot) => {
-                userSeriesMap = {}; // Réinitialiser la map
+                userSeriesMap = {}; 
                 const seriesList = [];
                 
                 snapshot.forEach((doc) => {
                     const data = doc.data();
                     const series = { 
                         ...data, 
-                        docId: doc.id // Stocker l'ID du document Firestore
+                        docId: doc.id 
                     };
                     seriesList.push(series);
-                    userSeriesMap[data.id] = series; // Utiliser l'ID de la série TCG comme clé
+                    userSeriesMap[data.id] = series; 
                 });
                 
-                // Trier les séries ajoutées par nom pour un affichage cohérent
                 seriesList.sort((a, b) => a.name.localeCompare(b.name));
 
                 renderUserSeriesList(seriesList);
@@ -278,23 +277,20 @@
             }
 
             try {
-                // Créer un document avec les données pertinentes
                 const seriesData = {
                     id: selectedSeries.id,
                     name: selectedSeries.name,
                     releaseDate: selectedSeries.releaseDate,
                     totalCards: selectedSeries.total,
-                    addedAt: serverTimestamp() // Timestamp du serveur
+                    addedAt: serverTimestamp() 
                 };
                 
                 const seriesCollectionRef = collection(db, getCollectionPath());
-                // Utiliser setDoc avec un ID de document basé sur l'ID de la série pour éviter les doublons
-                // Note : Pour une collection simple, addDoc ou setDoc avec un ID auto-généré est souvent suffisant, mais ici on veut garantir l'unicité par ID TCG.
                 const docRef = doc(seriesCollectionRef, seriesId); 
                 await setDoc(docRef, seriesData);
 
                 showMessage(errorMsgEl, `Série "${selectedSeries.name}" ajoutée avec succès!`, false);
-                seriesSelectEl.value = ""; // Réinitialiser la sélection
+                seriesSelectEl.value = ""; 
 
             } catch (error) {
                 console.error("Erreur lors de l'ajout de la série:", error);
@@ -322,7 +318,7 @@
 
         // --- 5. Rendu de la Liste Personnelle ---
         function renderUserSeriesList(seriesList) {
-            collectionListEl.innerHTML = ''; // Nettoyer la liste
+            collectionListEl.innerHTML = ''; 
             
             if (seriesList.length === 0) {
                 emptyMessageEl.classList.remove('hidden');
@@ -390,8 +386,7 @@
         });
 
         seriesSelectEl.addEventListener('change', () => {
-             // Cacher l'erreur lors d'une nouvelle sélection
-            errorMsgEl.classList.add('hidden');
+             errorMsgEl.classList.add('hidden');
         });
         
         // Démarrer l'application
