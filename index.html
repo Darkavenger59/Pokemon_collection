@@ -7,7 +7,7 @@
     <!-- Chargement de Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- NOUVEAU: Ajout du manifeste PWA pour l'installation sur l'écran d'accueil -->
+    <!-- Ajout du manifeste PWA pour l'installation sur l'écran d'accueil -->
     <link rel="manifest" href="/manifest.json">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
@@ -96,29 +96,29 @@
     <!-- Firebase Imports and Setup -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // --- Configuration Firebase ---
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDcHQZc21k4zeFqv92EWr_Jf4Qe58h9COg",
-  authDomain: "pokemon-tcg-collection-6aa1b.firebaseapp.com",
-  projectId: "pokemon-tcg-collection-6aa1b",
-  storageBucket: "pokemon-tcg-collection-6aa1b.firebasestorage.app",
-  messagingSenderId: "480822280087",
-  appId: "1:480822280087:web:c880758db2cea43d660ed2"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
+        // --- Configuration Firebase (VOTRE CONFIGURATION) ---
+        // J'ai retiré les imports en double et les variables de l'environnement Canvas.
+        
+        const appId = 'pokemon-collection-public-id'; // ID d'application par défaut pour le chemin Firestore
+        
+        const firebaseConfig = {
+          apiKey: "AIzaSyDcHQZc21k4zeFqv92EWr_Jf4Qe58h9COg",
+          authDomain: "pokemon-tcg-collection-6aa1b.firebaseapp.com",
+          projectId: "pokemon-tcg-collection-6aa1b",
+          storageBucket: "pokemon-tcg-collection-6aa1b.firebasestorage.app",
+          messagingSenderId: "480822280087",
+          appId: "1:480822280087:web:c880758db2cea43d660ed2"
+        };
+        
+        let db = null;
+        let auth = null;
+        let currentUserId = null;
+        let isAuthReady = false;
+        
         // Éléments DOM
         const loadingStatusEl = document.getElementById('loading-status');
         const addFormEl = document.getElementById('add-form');
@@ -148,51 +148,43 @@ const app = initializeApp(firebaseConfig);
             }, 5000);
         }
 
-        // --- 1. Initialisation et Authentification Firebase ---
+        // --- 1. Initialisation et Authentification Firebase SIMPLIFIÉE ---
         try {
-            if (Object.keys(firebaseConfig).length > 0) {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                setLogLevel('debug'); 
-            } else {
-                showMessage(errorMsgEl, "Erreur: La configuration Firebase est manquante. L'application fonctionnera sans persistance.", true);
-            }
+            // Initialisation unique
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            setLogLevel('debug'); 
         } catch (e) {
             console.error("Erreur d'initialisation Firebase:", e);
-            showMessage(errorMsgEl, "Erreur d'initialisation Firebase. Vérifiez la console.", true);
+            showMessage(errorMsgEl, "Erreur d'initialisation Firebase. Vérifiez vos clés.", true);
         }
 
         if (db && auth) {
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    currentUserId = user.uid;
-                } else {
-                    if (initialAuthToken) {
-                        try {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } catch (e) {
-                            console.warn("Échec de la connexion par token, connexion anonyme...");
-                            await signInAnonymously(auth);
-                            currentUserId = auth.currentUser.uid;
-                        }
-                    } else {
-                        await signInAnonymously(auth);
-                        currentUserId = auth.currentUser.uid;
-                    }
-                }
-                
-                isAuthReady = true;
-                userIdDisplayEl.textContent = currentUserId;
-                
-                fetchPokemonSeries();
-                setupSeriesListener();
-            });
+            // Tentative de connexion anonyme FORCÉE
+            signInAnonymously(auth)
+                .then((userCredential) => {
+                    currentUserId = userCredential.user.uid;
+                    isAuthReady = true;
+                    userIdDisplayEl.textContent = currentUserId;
+                    
+                    fetchPokemonSeries();
+                    setupSeriesListener();
+                })
+                .catch((error) => {
+                    console.error("Erreur de connexion anonyme Firebase. L'application ne peut pas enregistrer de données.", error);
+                    userIdDisplayEl.textContent = 'Erreur Auth';
+                    showMessage(errorMsgEl, "Échec de la connexion (Auth). Sauvegarde impossible. Avez-vous activé l'authentification Anonyme dans Firebase?", true);
+                    isAuthReady = false;
+                    fetchPokemonSeries(); 
+                });
+
         } else {
-            currentUserId = 'Non disponible';
+            // Si l'initialisation a échoué
             userIdDisplayEl.textContent = 'Non disponible';
             fetchPokemonSeries();
         }
+
 
         // --- 2. Fonctions API Pokémon TCG ---
         async function fetchPokemonSeries() {
@@ -237,11 +229,16 @@ const app = initializeApp(firebaseConfig);
 
         // --- 3. Fonctions Firestore (Lecture en temps réel) ---
         function getCollectionPath() {
-            return `artifacts/${appId}/users/${currentUserId}/pokemon_series`;
+            // Chemin simplifié et public pour ce type d'hébergement. 
+            // Ce chemin correspond aux règles de sécurité que j'ai fournies si elles ont été correctement appliquées : public_collections/{userId}/pokemon_series
+            return `public_collections/${currentUserId}/pokemon_series`;
         }
 
         function setupSeriesListener() {
-            if (!isAuthReady || !db) return;
+            if (!isAuthReady || !db || !currentUserId) {
+                console.warn("Firestore non prêt ou pas d'ID utilisateur, l'écouteur n'est pas activé.");
+                return;
+            }
 
             const seriesCollectionRef = collection(db, getCollectionPath());
             const q = query(seriesCollectionRef);
@@ -264,15 +261,15 @@ const app = initializeApp(firebaseConfig);
 
                 renderUserSeriesList(seriesList);
             }, (error) => {
-                console.error("Erreur de l'écouteur Firestore:", error);
-                showMessage(errorMsgEl, "Erreur de connexion à la base de données de votre collection.", true);
+                console.error("Erreur de l'écouteur Firestore. Les données ne seront pas chargées/sauvegardées.", error);
+                showMessage(errorMsgEl, "Erreur de connexion à la base de données de votre collection. Vérifiez les règles Firestore.", true);
             });
         }
 
         // --- 4. Fonctions Firestore (Écriture) ---
 
         async function addSeries(seriesId) {
-            if (!isAuthReady || !db) {
+            if (!isAuthReady || !db || !currentUserId) {
                 showMessage(errorMsgEl, "Authentification en cours ou Firebase non initialisé.", true);
                 return;
             }
@@ -295,6 +292,7 @@ const app = initializeApp(firebaseConfig);
                 };
                 
                 const seriesCollectionRef = collection(db, getCollectionPath());
+                // Utilise l'ID de la série comme ID du document pour la facilité de vérification
                 const docRef = doc(seriesCollectionRef, seriesId); 
                 await setDoc(docRef, seriesData);
 
@@ -303,17 +301,18 @@ const app = initializeApp(firebaseConfig);
 
             } catch (error) {
                 console.error("Erreur lors de l'ajout de la série:", error);
-                showMessage(errorMsgEl, "Échec de l'ajout de la série. Vérifiez les permissions.", true);
+                showMessage(errorMsgEl, "Échec de l'ajout de la série. Vérifiez les permissions de votre base de données.", true);
             }
         }
 
         async function removeSeries(docId) {
-            if (!isAuthReady || !db) {
+            if (!isAuthReady || !db || !currentUserId) {
                 showMessage(errorMsgEl, "Authentification en cours ou Firebase non initialisé.", true);
                 return;
             }
 
             try {
+                // docId est l'ID de la série (utilisé comme ID du document)
                 const docRef = doc(db, getCollectionPath(), docId);
                 await deleteDoc(docRef);
                 showMessage(errorMsgEl, "Série supprimée de votre collection.", false);
@@ -353,7 +352,8 @@ const app = initializeApp(firebaseConfig);
                     <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
                     </svg>`;
                 deleteButton.title = `Supprimer ${series.name}`;
-                deleteButton.addEventListener('click', () => openModal(series));
+                // Passe l'ID de la série/document à la modale
+                deleteButton.addEventListener('click', () => openModal({ ...series, docId: series.id }));
 
                 div.appendChild(info);
                 div.appendChild(deleteButton);
@@ -363,7 +363,8 @@ const app = initializeApp(firebaseConfig);
         
         // --- 6. Logique Modale (Confirmation) ---
         function openModal(series) {
-            pendingDeletionDocId = series.docId;
+            // Utilise l'ID de la série (qui est aussi l'ID du document)
+            pendingDeletionDocId = series.docId; 
             modalTextEl.innerHTML = `Êtes-vous sûr de vouloir supprimer définitivement la série <span class="font-bold">${series.name}</span> de votre collection ?`;
             modalContainerEl.classList.remove('hidden');
         }
@@ -398,10 +399,7 @@ const app = initializeApp(firebaseConfig);
              errorMsgEl.classList.add('hidden');
         });
         
-        // Démarrer l'application
-        if (!db || !auth) {
-            fetchPokemonSeries();
-        }
+        // L'appel initial est géré par la logique d'authentification ci-dessus
     </script>
 </body>
 </html>
