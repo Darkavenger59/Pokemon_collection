@@ -101,14 +101,23 @@
         import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         // --- Configuration Firebase ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-        let db = null;
-        let auth = null;
-        let currentUserId = null;
-        let isAuthReady = false;
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDcHQZc21k4zeFqv92EWr_Jf4Qe58h9COg",
+  authDomain: "pokemon-tcg-collection-6aa1b.firebaseapp.com",
+  projectId: "pokemon-tcg-collection-6aa1b",
+  storageBucket: "pokemon-tcg-collection-6aa1b.firebasestorage.app",
+  messagingSenderId: "480822280087",
+  appId: "1:480822280087:web:c880758db2cea43d660ed2"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
         // Éléments DOM
         const loadingStatusEl = document.getElementById('loading-status');
