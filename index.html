@@ -113,9 +113,20 @@
             <h2 class="text-2xl font-semibold mb-4 text-white">Ajouter un item</h2>
             <form id="add-item-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Champs du formulaire (Nom, Achat, Actuel) -->
+                <!-- Nature de l'item -->
+                <div class="md:col-span-2">
+                    <label for="add-item-nature" class="block text-sm font-medium text-slate-300 mb-1">Nature de l'item</label>
+                    <input type="text" id="add-item-nature" name="item-nature" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ETB, Display, Coffret...">
+                </div>
+                <!-- Bloc/Série -->
+                <div>
+                    <label for="add-item-block" class="block text-sm font-medium text-slate-300 mb-1">Bloc/Série</label>
+                    <input type="text" id="add-item-block" name="item-block" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="SWSH, SV, WOTC...">
+                </div>
+                <!-- Nom de la série -->
                 <div class="md:col-span-3">
-                    <label for="add-item-name" class="block text-sm font-medium text-slate-300 mb-1">Nom</label>
-                    <input type="text" id="add-item-name" name="item-name" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label for="add-item-set-name" class="block text-sm font-medium text-slate-300 mb-1">Nom de la série</label>
+                    <input type="text" id="add-item-set-name" name="item-set-name" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Célébrations, Évolution Céleste...">
                 </div>
                 <div>
                     <label for="add-purchase-price" class="block text-sm font-medium text-slate-300 mb-1">Prix d'achat (€)</label>
@@ -420,14 +431,19 @@
             e.preventDefault();
             if (!userId) { showMessage(addMessageBox, "Non authentifié.", true); return; }
 
-            const name = addItemForm['item-name'].value;
+            const nature = addItemForm['item-nature'].value;
+            const block = addItemForm['item-block'].value;
+            const setName = addItemForm['item-set-name'].value;
             const purchasePrice = parseFloat(addItemForm['purchase-price'].value);
             const currentValue = parseFloat(addItemForm['current-value'].value);
             const month = addMonthInput.value;
             const year = addYearInput.value;
             const currentValueDate = `${month}/${year}`;
+            
+            // Combiner les champs en un seul nom
+            const combinedName = `${nature} (${block}) - ${setName}`;
 
-            if (!name || isNaN(purchasePrice) || isNaN(currentValue) || !month || !year) {
+            if (!nature || !block || !setName || isNaN(purchasePrice) || isNaN(currentValue) || !month || !year) {
                 showMessage(addMessageBox, "Veuillez remplir tous les champs.", true); return;
             }
             
@@ -436,7 +452,8 @@
                 // Modification: Utiliser un chemin plus simple
                 const itemsCollectionRef = collection(db, 'users', userId, 'pokemonItems');
                 const newItemDoc = await addDoc(itemsCollectionRef, {
-                    name, purchasePrice, currentValue, currentValueDate,
+                    name: combinedName, // Utiliser le nom combiné
+                    purchasePrice, currentValue, currentValueDate,
                     createdAt: serverTimestamp() // Utiliser serverTimestamp pour la date de création
                 });
                 
