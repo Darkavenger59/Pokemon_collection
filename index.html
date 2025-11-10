@@ -368,7 +368,7 @@
                 
                 itemCard.innerHTML = `
                     <div class="flex-1 min-w-0">
-                        <h3 class="text-lg font-semibold text-white break-words">${item.name}</h3>
+                        <h3 class="text-lg font-semibold text-white truncate">${item.name}</h3>
                         <p class="text-sm text-slate-400">Achat: <span class="font-medium text-slate-300">${item.purchasePrice.toFixed(2)} €</span></p>
                         <p class="text-sm text-slate-400">Actuel: <span class="font-medium text-slate-300">${item.currentValue.toFixed(2)} €</span> 
                             <span class="text-xs text-slate-500">(${item.currentValueDate || 'N/A'})</span>
