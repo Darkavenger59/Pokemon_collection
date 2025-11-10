@@ -313,319 +313,438 @@
         const iconDown = `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-3.707-7.293l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414z" clip-rule="evenodd" /></svg>`;
         const iconNeutral = `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z" clip-rule="evenodd" /></svg>`;
         const iconEdit = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>`;
-        const iconDelete = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 00<!DOCTYPE html>
-<html lang="fr" class="h-full">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portefeuille Pokémon Scellé</title>
-    <!-- Chargement de TailwindCSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chargement de Chart.js pour les graphiques -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
-    
-    <!-- ... (Configuration Tailwind et style) ... -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+        const iconDelete = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>`;
+
+
+        // --- Fonctions Utilitaires ---
+        function showMessage(box, text, isError = false) {
+            box.textContent = text;
+            box.className = isError 
+                ? 'mt-4 text-center text-red-400' 
+                : 'mt-4 text-center text-green-400';
+            setTimeout(() => { box.textContent = ''; }, 3000);
+        }
+
+        function calculateChange(purchase, current) {
+            if (purchase <= 0) return { percent: "N/A", colorClass: "text-slate-400", icon: iconNeutral };
+            const change = ((current - purchase) / purchase) * 100;
+            const isPositive = change > 0;
+            const isNegative = change < 0;
+            let colorClass = "text-slate-400", icon = iconNeutral;
+            if (isPositive) { colorClass = "text-green-500"; icon = iconUp; }
+            else if (isNegative) { colorClass = "text-red-500"; icon = iconDown; }
+            return { percent: `${isPositive ? '+' : ''}${change.toFixed(2)}%`, colorClass, icon };
+        }
+
+        // --- Fonctions de Rendu ---
+        function renderItems(itemDocs) {
+            itemList.innerHTML = '';
+            loadingMessage.style.display = 'none';
+
+            if (itemDocs.length === 0) {
+                itemList.innerHTML = `<p class="text-center text-slate-400">Votre portefeuille est vide. Ajoutez un item pour commencer !</p>`;
+                return;
+            }
+
+            itemDocs.forEach(doc => {
+                const item = doc.data();
+                const id = doc.id;
+                const { percent, colorClass, icon } = calculateChange(item.purchasePrice, item.currentValue);
+
+                const itemCard = document.createElement('div');
+                itemCard.className = 'item-card bg-slate-800 rounded-lg shadow-lg p-4 flex justify-between items-center transition duration-200 hover:bg-slate-700 cursor-pointer';
+                
+                itemCard.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-lg font-semibold text-white truncate">${item.name}</h3>
+                        <p class="text-sm text-slate-400">Achat: <span class="font-medium text-slate-300">${item.purchasePrice.toFixed(2)} €</span></p>
+                        <p class="text-sm text-slate-400">Actuel: <span class="font-medium text-slate-300">${item.currentValue.toFixed(2)} €</span> 
+                            <span class="text-xs text-slate-500">(${item.currentValueDate || 'N/A'})</span>
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-2 mx-4 ${colorClass}">
+                        ${icon}
+                        <span class="text-lg font-bold">${percent}</span>
+                    </div>
+                    <div class="flex-shrink-0 flex space-x-2">
+                        <button data-id="${id}" class="edit-btn z-10 bg-yellow-500 hover:bg-yellow-600 text-white font-bold p-2 rounded-full transition duration-200" aria-label="Modifier l'item">
+                            ${iconEdit}
+                        </button>
+                        <button data-id="${id}" class="delete-btn z-10 bg-red-600 hover:bg-red-700 text-white font-bold p-2 rounded-full transition duration-200" aria-label="Supprimer l'item">
+                            ${iconDelete}
+                        </button>
+                    </div>
+                `;
+                
+                itemList.appendChild(itemCard);
+
+                // --- Ajout des écouteurs d'événements ---
+                // Bouton Supprimer
+                itemCard.querySelector('.delete-btn').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Empêche le clic de se propager à la carte
+                    handleDeleteItem(id, item.name);
+                });
+
+                // Bouton Modifier
+                itemCard.querySelector('.edit-btn').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Empêche le clic de se propager à la carte
+                    handleOpenEditModal(id, item);
+                });
+
+                // Clic sur la carte (pour le graphique)
+                itemCard.addEventListener('click', (e) => {
+                    // Ne s'active que si on ne clique pas sur un bouton
+                    if (!e.target.closest('.delete-btn') && !e.target.closest('.edit-btn')) {
+                        handleShowChart(id, item);
+                    }
+                });
+            });
+        }
+
+        // --- Logique Firestore ---
+        function loadItems(uid) {
+            try {
+                // Modification: Utiliser un chemin plus simple
+                const itemsCollectionRef = collection(db, 'users', uid, 'pokemonItems');
+                const q = query(itemsCollectionRef); // Pas de orderBy pour éviter erreur d'index
+                onSnapshot(q, (snapshot) => renderItems(snapshot.docs), (error) => {
+                    console.error("Erreur écoute items: ", error);
+                });
+            } catch (error) {
+                console.error("Erreur setup 'loadItems': ", error);
+            }
+        }
+
+        // *** FONCTION AJOUTÉE ***
+        async function handleAddItem(e) {
+            e.preventDefault();
+            if (!userId) { showMessage(addMessageBox, "Non authentifié.", true); return; }
+
+            const name = addItemForm['item-name'].value;
+            const purchasePrice = parseFloat(addItemForm['purchase-price'].value);
+            const currentValue = parseFloat(addItemForm['current-value'].value);
+            const month = addMonthInput.value;
+            const year = addYearInput.value;
+            const currentValueDate = `${month}/${year}`;
+
+            if (!name || isNaN(purchasePrice) || isNaN(currentValue) || !month || !year) {
+                showMessage(addMessageBox, "Veuillez remplir tous les champs.", true); return;
+            }
+            
+            try {
+                // 1. Ajouter l'item principal
+                // Modification: Utiliser un chemin plus simple
+                const itemsCollectionRef = collection(db, 'users', userId, 'pokemonItems');
+                const newItemDoc = await addDoc(itemsCollectionRef, {
+                    name, purchasePrice, currentValue, currentValueDate,
+                    createdAt: serverTimestamp() // Utiliser serverTimestamp pour la date de création
+                });
+                
+                // 2. Ajouter la première entrée à l'historique
+                const [addMonth, addYear] = currentValueDate.split('/');
+                const addJsDate = new Date(addYear, addMonth - 1, 1); // Mois est 0-indexé
+                const addFirestoreDate = Timestamp.fromDate(addJsDate);
+
+                // Modification: Utiliser un chemin plus simple
+                const historyCollectionRef = collection(db, 'users', userId, 'pokemonItems', newItemDoc.id, 'valueHistory');
+                await addDoc(historyCollectionRef, {
+                    value: currentValue,
+                    date: addFirestoreDate
+                });
+
+                showMessage(addMessageBox, "Item ajouté !", false);
+                addItemForm.reset();
+                addModal.classList.add('hidden');
+
+            } catch (error) {
+                console.error("Erreur ajout item: ", error);
+                showMessage(addMessageBox, "Erreur lors de l'ajout.", true);
+            }
+        }
+        // *** FIN FONCTION AJOUTÉE ***
+
+        async function handleDeleteItem(id, name) {
+            if (!userId) return;
+            deleteTargetId = id;
+            confirmDeleteItemName.textContent = name;
+            confirmDeleteModal.classList.remove('hidden');
+        }
+
+        async function executeDelete() {
+            if (!userId || !deleteTargetId) return;
+            
+            const idToDelete = deleteTargetId;
+            deleteTargetId = null; // Réinitialiser avant l'opération
+            
+            // Note : Ceci ne supprime pas la sous-collection 'valueHistory'.
+            // Une suppression propre nécessiterait une Cloud Function.
+            // Pour cette app, c'est acceptable.
+            try {
+                // Modification: Utiliser un chemin plus simple
+                const docRef = doc(db, 'users', userId, 'pokemonItems', idToDelete);
+                await deleteDoc(docRef);
+                confirmDeleteModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Erreur suppression: ", error);
+                // Remettre l'ID si erreur
+                deleteTargetId = idToDelete; 
+            }
+        }
+
+        async function handleSaveEdit(e) {
+            e.preventDefault();
+            if (!userId) { showMessage(editMessageBox, "Non authentifié.", true); return; }
+
+            const id = editItemForm['edit-item-id'].value;
+            const currentValue = parseFloat(editItemForm['edit-current-value'].value);
+            const month = editMonthInput.value;
+            const year = editYearInput.value;
+            const currentValueDate = `${month}/${year}`;
+            const oldValue = parseFloat(editItemForm['edit-item-old-value'].value);
+            
+            if (!id || isNaN(currentValue) || !month || !year) {
+                 showMessage(editMessageBox, "Champs invalides.", true); return;
+            }
+            
+            try {
+                // 1. Mettre à jour l'item principal
+                // Modification: Utiliser un chemin plus simple
+                const docRef = doc(db, 'users', userId, 'pokemonItems', id);
+                await updateDoc(docRef, { currentValue, currentValueDate });
+
+                // 2. Ajouter à l'historique SEULEMENT si la valeur a changé
+                if (currentValue !== oldValue) {
+                    const [editMonth, editYear] = currentValueDate.split('/');
+                    const editJsDate = new Date(editYear, editMonth - 1, 1); // Mois est 0-indexé
+                    const editFirestoreDate = Timestamp.fromDate(editJsDate);
+                    
+                    const historyCollectionRef = collection(docRef, 'valueHistory');
+                    await addDoc(historyCollectionRef, {
+                        value: currentValue,
+                        date: editFirestoreDate
+                    });
+                }
+                
+                showMessage(editMessageBox, "Modifications enregistrées !", false);
+                editModal.classList.add('hidden');
+
+            } catch (error) {
+                console.error("Erreur sauvegarde: ", error);
+                showMessage(editMessageBox, "Erreur sauvegarde.", true);
+            }
+        }
+
+        // --- Logique Modals & Graphique ---
+        function handleOpenEditModal(id, item) {
+            editItemForm['edit-item-id'].value = id;
+            editItemForm['edit-item-name'].value = item.name;
+            editItemForm['edit-purchase-price'].value = item.purchasePrice;
+            editItemForm['edit-current-value'].value = item.currentValue;
+            
+            const [month, year] = (item.currentValueDate || '11/2025').split('/');
+            editMonthInput.value = month.padStart(2, '0');
+            editYearInput.value = year;
+
+            editItemForm['edit-item-old-value'].value = item.currentValue; // Stocker l'ancienne valeur
+            editModal.classList.remove('hidden');
+        }
+
+        async function handleShowChart(id, item) {
+            if (!userId) return;
+            chartItemName.textContent = `Historique de: ${item.name}`;
+            
+            try {
+                // 1. Récupérer l'historique
+                // Modification: Utiliser un chemin plus simple
+                const historyRef = collection(db, 'users', userId, 'pokemonItems', id, 'valueHistory');
+                const historyQuery = query(historyRef); // Pas de orderBy
+                const snapshot = await getDocs(historyQuery);
+                
+                // 2. Trier les données en JS car Fimrebase requiert un index pour orderBy
+                const historyData = snapshot.docs
+                    .map(doc => doc.data())
+                    .filter(d => d.date) // S'assurer que la date existe
+                    .sort((a, b) => a.date.seconds - b.date.seconds);
+
+                const labels = historyData.map(d => {
+                    const date = new Date(d.date.seconds * 1000);
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${month}/${year}`;
+                });
+                const values = historyData.map(d => d.value);
+
+                // 3. Détruire l'ancien graphique s'il existe
+                if (itemChart) {
+                    itemChart.destroy();
+                }
+
+                // 4. Créer le nouveau graphique
+                itemChart = new Chart(chartCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Cote Actuelle (€)',
+                                data: values,
+                                borderColor: 'rgb(59, 130, 246)', // Bleu
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                fill: true,
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Prix Achat (€)',
+                                data: Array(labels.length).fill(item.purchasePrice),
+                                borderColor: 'rgb(234, 179, 8)', // Jaune
+                                borderDash: [5, 5],
+                                fill: false
+                            }
+                        ]
                     },
-                },
-            },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        scales: {
+                            y: { beginAtZero: true } // Changé de false à true
+                        }
+                    }
+                });
+
+                chartModal.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Erreur chargement graphique: ", error);
+            }
         }
+
+        /**
+         * Configure les boutons stepper pour un sélecteur de date (mois/année).
+         * @param {HTMLInputElement} monthInput - L'input du mois
+         * @param {HTMLButtonElement} monthUp - Bouton mois +
+         * @param {HTMLButtonElement} monthDown - Bouton mois -
+         * @param {HTMLInputElement} yearInput - L'input de l'année
+         * @param {HTMLButtonElement} yearUp - Bouton année +
+         * @param {HTMLButtonElement} yearDown - Bouton année -
+         */
+        function setupDateStepper(monthInput, monthUp, monthDown, yearInput, yearUp, yearDown) {
+            monthUp.addEventListener('click', () => {
+                let m = parseInt(monthInput.value);
+                m = (m % 12) + 1; // 12 -> 1, 1 -> 2
+                monthInput.value = m.toString().padStart(2, '0');
+            });
+            monthDown.addEventListener('click', () => {
+                let m = parseInt(monthInput.value);
+                m = (m === 1) ? 12 : m - 1; // 1 -> 12, 2 -> 1
+                monthInput.value = m.toString().padStart(2, '0');
+            });
+            yearUp.addEventListener('click', () => {
+                yearInput.value = parseInt(yearInput.value) + 1;
+            });
+            yearDown.addEventListener('click', () => {
+                let y = parseInt(yearInput.value);
+                if (y > 1990) { // Bloque à l'an 1990
+                    yearInput.value = y - 1;
+                }
+            });
+        }
+
+        // --- Point d'entrée principal ---
+        async function main() {
+            try {
+                // L'initialisation (app, db, auth) est déjà faite à l'extérieur.
+                setLogLevel('Debug');
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdDisplay.textContent = userId;
+                        loadItems(userId);
+                    } else {
+                        userId = null;
+                        userIdDisplay.textContent = 'Non connecté';
+                        await attemptSignIn();
+                    }
+                });
+                
+                // --- Écouteurs d'événements globaux ---
+                addItemForm.addEventListener('submit', handleAddItem);
+                editItemForm.addEventListener('submit', handleSaveEdit);
+                
+                // Configurer les steppers de date
+                setupDateStepper(
+                    addMonthInput,
+                    document.getElementById('add-month-up'),
+                    document.getElementById('add-month-down'),
+                    addYearInput,
+                    document.getElementById('add-year-up'),
+                    document.getElementById('add-year-down')
+                );
+                setupDateStepper(
+                    editMonthInput,
+                    document.getElementById('edit-month-up'),
+                    document.getElementById('edit-month-down'),
+                    editYearInput,
+                    document.getElementById('edit-year-up'),
+                    document.getElementById('edit-year-down')
+                );
+                
+                // --- Écouteurs Modals ---
+                
+                // Ouvrir modal Ajout
+                openAddModalBtn.addEventListener('click', () => {
+                    // Pré-remplir la date actuelle
+                    const now = new Date();
+                    addMonthInput.value = (now.getMonth() + 1).toString().padStart(2, '0');
+                    addYearInput.value = now.getFullYear().toString();
+                    
+                    addModal.classList.remove('hidden');
+                });
+                
+                // Fermer tous les modals
+                allCloseModalBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        btn.closest('.fixed').classList.add('hidden');
+                    });
+                });
+                
+                // Fermer en cliquant sur l'overlay
+                [addModal, editModal, chartModal, confirmDeleteModal].forEach(modal => {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            modal.classList.add('hidden');
+                            if (modal === confirmDeleteModal) {
+                                deleteTargetId = null; // Annuler la suppression si on clique à côté
+                            }
+                        }
+                    });
+                });
+
+                // Écouteurs Modal Suppression
+                cancelDeleteBtn.addEventListener('click', () => {
+                    confirmDeleteModal.classList.add('hidden');
+                    deleteTargetId = null;
+                });
+                confirmDeleteBtn.addEventListener('click', executeDelete);
+
+            } catch (error) {
+                console.error("Erreur d'initialisation:", error);
+                loadingMessage.textContent = "Erreur d'initialisation.";
+                userIdDisplay.textContent = "Erreur"; // Mettre à jour l'affichage
+            }
+        }
+        
+        async function attemptSignIn() {
+             try {
+                // Modification : Supprimer la vérification de __initial_auth_token
+                // car il ne correspond pas à votre projet Firebase personnel.
+                // Forcer l'authentification anonyme.
+                await signInAnonymously(auth);
+            } catch (error) {
+                console.error("Erreur d'authentification:", error);
+            }
+        }
+        main();
     </script>
-    <style>
-        body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-        /* Style pour le canvas du graphique */
-        #item-chart-canvas {
-            max-height: 400px;
-        }
-        .stepper-btn-v { /* Nouveau style pour boutons verticaux */
-            @apply bg-slate-600 hover:bg-slate-500 text-white font-bold h-1/2 px-2 flex items-center justify-center transition-colors duration-150;
-        }
-
-        /* CORRECTION CSS FORCEE POUR SAFARI/MOBILE */
-        .year-input, .month-input {
-            -webkit-appearance: none !important; /* Force no native appearance */
-            appearance: none !important;
-            background-color: #334155 !important; /* slate-700 */
-            border: 1px solid #475569 !important; /* slate-600 */
-            border-right: none !important; /* Le conteneur du bouton gère la bordure droite */
-            color: white !important;
-            -webkit-text-fill-color: white !important; /* Force texte blanc iOS */
-            opacity: 1 !important; /* Force opacité iOS */
-            
-            padding-top: 0.5rem;
-            padding-bottom: 0.5rem;
-            padding-left: 0.25rem;
-            padding-right: 0.25rem;
-            text-align: center;
-            outline: none;
-            
-            /* Ajout du border-radius manquant */
-            border-top-left-radius: 0.375rem; /* rounded-l-md */
-            border-bottom-left-radius: 0.375rem; /* rounded-l-md */
-        }
-        .year-input {
-            width: 3.5rem; /* w-14 */
-        }
-        .month-input {
-            width: 2.5rem; /* w-10 */
-        }
-        /* FIN CORRECTION CSS */
-
-    </style>
-</head>
-<body class="h-full bg-slate-900 text-slate-100 font-sans p-4 md:p-8">
-
-    <div class="max-w-3xl mx-auto">
-        
-        <!-- Titre de l'application -->
-        <header class="mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-center text-yellow-400">
-                Mon Portefeuille Pokémon
-            </h1>
-            <p class="text-center text-slate-400 text-lg">
-                Suivi de vos items scellés
-            </p>
-        </header>
-
-        <!-- Bouton pour ouvrir le modal d'ajout -->
-        <section class="mb-8">
-            <button id="open-add-modal-btn"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-md shadow-lg transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center space-x-2">
-                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                </svg>
-                <span>Ajouter un item</span>
-            </button>
-        </section>
-
-        <!-- Liste des items -->
-        <section>
-            <h2 class="text-2xl font-semibold mb-4 text-white">Ma Collection</h2>
-            <div id="item-list" class="space-y-4">
-                <p id="loading-message" class="text-center text-slate-400">Chargement de vos items...</p>
-            </div>
-        </section>
-
-        <footer class="mt-8 text-center text-xs text-slate-500">
-            <p>Connecté en tant que: <span id="user-id-display">N/A</span></p>
-        </footer>
-    </div>
-
-    <!-- ===== MODALS ===== -->
-
-    <!-- Modal d'AJOUT d'item -->
-    <div id="add-item-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-lg relative">
-            <button class="close-modal-btn absolute top-3 right-3 text-slate-400 hover:text-white transition-colors" aria-label="Fermer">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <h2 class="text-2xl font-semibold mb-4 text-white">Ajouter un item</h2>
-            <form id="add-item-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Champs du formulaire (Nom, Achat, Actuel) -->
-                <div class="md:col-span-3">
-                    <label for="add-item-name" class="block text-sm font-medium text-slate-300 mb-1">Nom</label>
-                    <input type="text" id="add-item-name" name="item-name" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label for="add-purchase-price" class="block text-sm font-medium text-slate-300 mb-1">Prix d'achat (€)</label>
-                    <input type="number" id="add-purchase-price" name="purchase-price" step="0.01" min="0" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label for="add-current-value" class="block text-sm font-medium text-slate-300 mb-1">Cote actuelle (€)</label>
-                    <input type="number" id="add-current-value" name="current-value" step="0.01" min="0" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Date cote</label>
-                    <div class="flex flex-wrap sm:flex-nowrap">
-                        <!-- Sélecteur Mois -->
-                        <div class="flex flex-col items-start mr-2 mb-2 sm:mb-0">
-                            <span class="text-xs text-slate-400">Mois</span>
-                            <div class="flex rounded-md shadow-sm">
-                                <input type="text" id="add-date-month" class="month-input" value="11" readonly>
-                                <div class="flex flex-col border-l border-slate-800">
-                                    <button type="button" id="add-month-up" class="stepper-btn-v rounded-tr-md text-xs">▲</button>
-                                    <button type="button" id="add-month-down" class="stepper-btn-v rounded-br-md border-t border-slate-700 text-xs">▼</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Sélecteur Année -->
-                        <div class="flex flex-col items-start">
-                            <span class="text-xs text-slate-400">Année</span>
-                            <div class="flex rounded-md shadow-sm">
-                                <input type="text" id="add-date-year" class="year-input" value="2025" readonly>
-                                <div class="flex flex-col border-l border-slate-800">
-                                    <button type="button" id="add-year-up" class="stepper-btn-v rounded-tr-md text-xs">▲</button>
-                                    <button type="button" id="add-year-down" class="stepper-btn-v rounded-br-md border-t border-slate-700 text-xs">▼</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="md:col-span-3">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-lg transition duration-200">Ajouter</button>
-                </div>
-            </form>
-            <div class="add-message-box mt-4 text-center"></div>
-        </div>
-    </div>
-
-    <!-- Modal de MODIFICATION d'item -->
-    <div id="edit-item-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-lg relative">
-            <button class="close-modal-btn absolute top-3 right-3 text-slate-400 hover:text-white transition-colors" aria-label="Fermer">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <h2 class="text-2xl font-semibold mb-4 text-white">Modifier l'item</h2>
-            <form id="edit-item-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input type="hidden" id="edit-item-id">
-                <input type="hidden" id="edit-item-old-value">
-                <!-- Champs du formulaire (Nom, Achat, Actuel) -->
-                <div class="md:col-span-3">
-                    <label for="edit-item-name" class="block text-sm font-medium text-slate-300 mb-1">Nom</label>
-                    <input type="text" id="edit-item-name" name="item-name" required class="w-full bg-slate-600 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
-                </div>
-                <div>
-                    <label for="edit-purchase-price" class="block text-sm font-medium text-slate-300 mb-1">Prix d'achat (€)</label>
-                    <input type="number" id="edit-purchase-price" name="purchase-price" step="0.01" min="0" required class="w-full bg-slate-600 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
-                </div>
-                <div>
-                    <label for="edit-current-value" class="block text-sm font-medium text-slate-300 mb-1">Cote actuelle (€)</label>
-                    <input type="number" id="edit-current-value" name="current-value" step="0.01" min="0" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Date cote</label>
-                    <div class="flex flex-wrap sm:flex-nowrap">
-                        <!-- Sélecteur Mois -->
-                        <div class="flex flex-col items-start mr-2 mb-2 sm:mb-0">
-                            <span class="text-xs text-slate-400">Mois</span>
-                            <div class="flex rounded-md shadow-sm">
-                                <input type="text" id="edit-date-month" class="month-input" value="11" readonly>
-                                <div class="flex flex-col border-l border-slate-800">
-                                    <button type="button" id="edit-month-up" class="stepper-btn-v rounded-tr-md text-xs">▲</button>
-                                    <button type="button" id="edit-month-down" class="stepper-btn-v rounded-br-md border-t border-slate-700 text-xs">▼</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Sélecteur Année -->
-                        <div class="flex flex-col items-start">
-                            <span class="text-xs text-slate-400">Année</span>
-                            <div class="flex rounded-md shadow-sm">
-                                <input type="text" id="edit-date-year" class="year-input" value="2025" readonly>
-                                <div class="flex flex-col border-l border-slate-800">
-                                    <button type="button" id="edit-year-up" class="stepper-btn-v rounded-tr-md text-xs">▲</button>
-                                    <button type="button" id="edit-year-down" class="stepper-btn-v rounded-br-md border-t border-slate-700 text-xs">▼</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="md:col-span-3">
-                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow-lg transition duration-200">Enregistrer</button>
-                </div>
-            </form>
-            <div class="edit-message-box mt-4 text-center"></div>
-        </div>
-    </div>
-
-    <!-- Modal GRAPHIQUE -->
-    <div id="chart-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-3xl relative">
-            <button class="close-modal-btn absolute top-3 right-3 text-slate-400 hover:text-white transition-colors" aria-label="Fermer">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <h2 id="chart-item-name" class="text-2xl font-semibold mb-4 text-white">Historique de la cote</h2>
-            <div class="bg-slate-900 p-4 rounded-md">
-                <canvas id="item-chart-canvas"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de CONFIRMATION Suppression -->
-    <div id="confirm-delete-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
-            <h2 class="text-xl font-semibold mb-4 text-white">Confirmer la suppression</h2>
-            <p class="text-slate-300 mb-6">Voulez-vous vraiment supprimer cet item ? <br> <span id="confirm-delete-item-name" class="font-bold"></span></p>
-            <div class="flex justify-end space-x-4">
-                <button id="cancel-delete-btn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-md shadow-lg transition duration-200">Annuler</button>
-                <button id="confirm-delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md shadow-lg transition duration-200">Supprimer</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Imports Firebase -->
-    <script type="module">
-        // Importations nécessaires depuis le SDK Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, doc, addDoc, deleteDoc, onSnapshot, 
-            collection, serverTimestamp, query, setLogLevel,
-            updateDoc, getDocs, getDoc, Timestamp
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-          apiKey: "AIzaSyDcHQZc21k4zeFqv92EWr_Jf4Qe58h9COg",
-          authDomain: "pokemon-tcg-collection-6aa1b.firebaseapp.com",
-          projectId: "pokemon-tcg-collection-6aa1b",
-          storageBucket: "pokemon-tcg-collection-6aa1b.firebasestorage.app",
-          messagingSenderId: "480822280087",
-          appId: "1:480822280087:web:c880758db2cea43d660ed2"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        // La variable appId n'est plus nécessaire pour le chemin simplifié
-        
-        let userId, itemChart = null;
-        let deleteTargetId = null; // Pour la confirmation de suppression
-        
-        // --- Éléments DOM ---
-        const itemList = document.getElementById('item-list');
-        const loadingMessage = document.getElementById('loading-message');
-        const userIdDisplay = document.getElementById('user-id-display');
-
-        // Modal Ajout
-        const addModal = document.getElementById('add-item-modal');
-        const openAddModalBtn = document.getElementById('open-add-modal-btn');
-        const addItemForm = document.getElementById('add-item-form');
-        const addMessageBox = addModal.querySelector('.add-message-box');
-        const addMonthInput = document.getElementById('add-date-month');
-        const addYearInput = document.getElementById('add-date-year');
-
-        // Modal Modification
-        const editModal = document.getElementById('edit-item-modal');
-        const editItemForm = document.getElementById('edit-item-form');
-        const editMessageBox = editModal.querySelector('.edit-message-box');
-        const editMonthInput = document.getElementById('edit-date-month');
-        const editYearInput = document.getElementById('edit-date-year');
-
-        // Modal Graphique
-        const chartModal = document.getElementById('chart-modal');
-        const chartItemName = document.getElementById('chart-item-name');
-        const chartCanvas = document.getElementById('item-chart-canvas').getContext('2d');
-
-        // Modal Confirmation Suppression
-        const confirmDeleteModal = document.getElementById('confirm-delete-modal');
-        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-        const confirmDeleteItemName = document.getElementById('confirm-delete-item-name');
-
-        // Boutons de fermeture
-        const allCloseModalBtns = document.querySelectorAll('.close-modal-btn');
-
-        // SVG Icônes
-        const iconUp = `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" /></svg>`;
-        const iconDown = `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-3.707-7.293l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414z" clip-rule="evenodd" /></svg>`;
-        const iconNeutral = `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z" clip-rule="evenodd" /></svg>`;
-        const iconEdit = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>`;
-        const iconDelete = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 00
+</body>
+</html>
