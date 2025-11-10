@@ -364,27 +364,35 @@
                 const { percent, colorClass, icon } = calculateChange(item.purchasePrice, item.currentValue);
 
                 const itemCard = document.createElement('div');
-                itemCard.className = 'item-card bg-slate-800 rounded-lg shadow-lg p-4 flex justify-between items-center transition duration-200 hover:bg-slate-700 cursor-pointer';
+                itemCard.className = 'item-card bg-slate-800 rounded-lg shadow-lg p-4 flex flex-col transition duration-200 hover:bg-slate-700 cursor-pointer';
                 
                 itemCard.innerHTML = `
-                    <div class="flex-1 min-w-0">
-                        <h3 class="text-lg font-semibold text-white truncate">${item.name}</h3>
+                    <!-- Partie Nom/Prix (prend toute la largeur) -->
+                    <div class="w-full">
+                        <h3 class="text-lg font-semibold text-white break-words">${item.name}</h3>
                         <p class="text-sm text-slate-400">Achat: <span class="font-medium text-slate-300">${item.purchasePrice.toFixed(2)} €</span></p>
                         <p class="text-sm text-slate-400">Actuel: <span class="font-medium text-slate-300">${item.currentValue.toFixed(2)} €</span> 
                             <span class="text-xs text-slate-500">(${item.currentValueDate || 'N/A'})</span>
                         </p>
                     </div>
-                    <div class="flex items-center space-x-2 mx-4 ${colorClass}">
-                        ${icon}
-                        <span class="text-lg font-bold">${percent}</span>
-                    </div>
-                    <div class="flex-shrink-0 flex space-x-2">
-                        <button data-id="${id}" class="edit-btn z-10 bg-yellow-500 hover:bg-yellow-600 text-white font-bold p-2 rounded-full transition duration-200" aria-label="Modifier l'item">
-                            ${iconEdit}
-                        </button>
-                        <button data-id="${id}" class="delete-btn z-10 bg-red-600 hover:bg-red-700 text-white font-bold p-2 rounded-full transition duration-200" aria-label="Supprimer l'item">
-                            ${iconDelete}
-                        </button>
+                    
+                    <!-- Séparateur -->
+                    <hr class="border-slate-700 my-3">
+
+                    <!-- Partie Bas: Évolution et Boutons -->
+                    <div class="w-full flex justify-between items-center">
+                        <div class="flex items-center space-x-2 ${colorClass}">
+                            ${icon}
+                            <span class="text-lg font-bold">${percent}</span>
+                        </div>
+                        <div class="flex-shrink-0 flex space-x-2">
+                            <button data-id="${id}" class="edit-btn z-10 bg-yellow-500 hover:bg-yellow-600 text-white font-bold p-2 rounded-full transition duration-200" aria-label="Modifier l'item">
+                                ${iconEdit}
+                            </button>
+                            <button data-id="${id}" class="delete-btn z-10 bg-red-600 hover:bg-red-700 text-white font-bold p-2 rounded-full transition duration-200" aria-label="Supprimer l'item">
+                                ${iconDelete}
+                            </button>
+                        </div>
                     </div>
                 `;
                 
