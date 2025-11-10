@@ -1,421 +1,710 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestionnaire de Séries Pokémon TCG</title>
-    <!-- Chargement de Tailwind CSS -->
+    <title>Portefeuille Pokémon Scellé</title>
+    <!-- Chargement de TailwindCSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chargement de Chart.js pour les graphiques -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
     
-    <!-- MANIFESTE INTÉGRÉ (SOLUTION CONTRE LES ERREURS DE CHEMINS) -->
-    <link rel="manifest" id="pwa-manifest" href="data:application/json;base64,eyJpY29ucyI6W3sic2l6ZXMiOiIxOTJ4MTkyIiwic3JjIjoiaHR0cHM6Ly9wbGFjZWhvbGQuY28vMTkyeDE5Mi80ZjQ2ZTUvZmZmZmZmP3RleHQ9UFdBIiwiZGVuc2l0eSI6IjEuMCIsInR5cGUiOiJpbWFnZS9wbmcifSx7InNpemVzIjoiNTEyeDUxMiIsInNyYyI6Imh0dHBzOi8vcGxhY2Vob2xkLmNvLzUxMng1MTIvNGY0NmU1L2ZmZmZmZj90ZXh0PVBXQSIsImRlbnNpdHkiOiIxLjAiLCJ0eXBlIjoiaW1hZ2UvcG5nIn1dLCJuYW1lIjoiQ29sbGVjdGlvbiBUQ0cgUG9rXzEiLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsInN0YXJ0X3VybCI6Ii9pbmRleC5odG1sIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYiLCJ0aGVtZV9jb2xvciI6IiM0ZjQ2ZTUifQ==">
-    
+    <!-- ... (Configuration Tailwind et style) ... -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            min-height: 100vh;
+        body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        /* Style pour le canvas du graphique */
+        #item-chart-canvas {
+            max-height: 400px;
         }
-        /* Style pour masquer le scrollbar sur certains navigateurs */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
+        .stepper-btn-v { /* Nouveau style pour boutons verticaux */
+            @apply bg-slate-600 hover:bg-slate-500 text-white font-bold h-1/2 px-2 flex items-center justify-center transition-colors duration-150;
         }
-        .no-scrollbar {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+        .year-input { /* Ancien .date-input */
+            @apply w-14 text-center bg-slate-700 border-slate-600 border-t border-b border-l py-2 px-1 text-white focus:outline-none appearance-none;
+            -webkit-appearance: none; /* Force Safari/iOS */
+        }
+        .month-input { /* Nouveau style pour mois */
+            @apply w-10 text-center bg-slate-700 border-slate-600 border-t border-b border-l py-2 px-1 text-white focus:outline-none appearance-none;
+            -webkit-appearance: none; /* Force Safari/iOS */
         }
     </style>
 </head>
-<body class="p-4 sm:p-8 flex flex-col items-center">
+<body class="h-full bg-slate-900 text-slate-100 font-sans p-4 md:p-8">
 
-    <div class="w-full max-w-xl bg-white shadow-2xl rounded-xl p-6 sm:p-8 space-y-6">
-
-        <h1 class="text-3xl font-bold text-gray-800 text-center border-b-2 border-indigo-500 pb-3">
-            Collection de Séries Pokémon
-        </h1>
+    <div class="max-w-3xl mx-auto">
         
-        <!-- Affichage de l'ID Utilisateur pour le partage -->
-        <p class="text-sm text-center text-gray-500">
-            Votre ID de session (pour la persistance): <span id="user-id-display" class="font-mono text-xs bg-gray-100 p-1 rounded">Chargement...</span>
-        </p>
-
-        <!-- Section d'ajout de série -->
-        <div class="space-y-4 pt-4 border-t border-gray-200">
-            <h2 class="text-xl font-semibold text-indigo-700">Ajouter une nouvelle Série</h2>
-            
-            <div id="loading-status" class="text-center text-indigo-500 hidden">
-                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-500 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Chargement des séries Pokémon TCG...
-            </div>
-            
-            <div id="add-form" class="space-y-3 hidden">
-                <select id="series-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 transition duration-150">
-                    <!-- Les options seront chargées ici par JavaScript -->
-                    <option value="" disabled selected>Sélectionnez une série...</option>
-                </select>
-                
-                <button id="add-button" disabled class="w-full bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg shadow-md hover:bg-indigo-600 transition duration-300 disabled:opacity-50">
-                    Ajouter à ma Collection
-                </button>
-            </div>
-            
-            <p id="error-message" class="text-red-500 text-sm hidden">
-                <!-- Les messages d'erreur seront affichés ici -->
+        <!-- Titre de l'application -->
+        <header class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-center text-yellow-400">
+                Mon Portefeuille Pokémon
+            </h1>
+            <p class="text-center text-slate-400 text-lg">
+                Suivi de vos items scellés
             </p>
-        </div>
+        </header>
 
-        <!-- Section de la collection personnelle -->
-        <div class="space-y-4 pt-6 border-t border-gray-200">
-            <h2 class="text-xl font-semibold text-green-700">Ma Collection Personnelle</h2>
-            
-            <div id="collection-list" class="space-y-3 max-h-80 overflow-y-auto no-scrollbar border p-3 rounded-lg bg-gray-50">
-                <p id="empty-message" class="text-gray-500 text-center italic">
-                    Votre collection est vide. Ajoutez une série ci-dessus !
-                </p>
-                <!-- Les séries ajoutées seront affichées ici -->
-            </div>
-        </div>
-        
-        <!-- Modal pour la confirmation (remplace alert/confirm) -->
-        <div id="modal-container" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden" role="dialog" aria-modal="true">
-            <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full mx-4">
-                <h3 class="text-lg font-bold text-red-600 mb-4">Confirmation de Suppression</h3>
-                <p id="modal-text" class="text-gray-700 mb-6">Êtes-vous sûr de vouloir supprimer cette série ?</p>
-                <div class="flex justify-end space-x-3">
-                    <button id="modal-cancel" class="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition">Annuler</button>
-                    <button id="modal-confirm" class="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">Supprimer</button>
-                </div>
-            </div>
-        </div>
+        <!-- Bouton pour ouvrir le modal d'ajout -->
+        <section class="mb-8">
+            <button id="open-add-modal-btn"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-md shadow-lg transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center space-x-2">
+                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                <span>Ajouter un item</span>
+            </button>
+        </section>
 
+        <!-- Liste des items -->
+        <section>
+            <h2 class="text-2xl font-semibold mb-4 text-white">Ma Collection</h2>
+            <div id="item-list" class="space-y-4">
+                <p id="loading-message" class="text-center text-slate-400">Chargement de vos items...</p>
+            </div>
+        </section>
+
+        <footer class="mt-8 text-center text-xs text-slate-500">
+            <p>Connecté en tant que: <span id="user-id-display">N/A</span></p>
+        </footer>
     </div>
 
-    <!-- Firebase Imports and Setup -->
+    <!-- ===== MODALS ===== -->
+
+    <!-- Modal d'AJOUT d'item -->
+    <div id="add-item-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-lg relative">
+            <button class="close-modal-btn absolute top-3 right-3 text-slate-400 hover:text-white transition-colors" aria-label="Fermer">
+                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h2 class="text-2xl font-semibold mb-4 text-white">Ajouter un item</h2>
+            <form id="add-item-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Champs du formulaire (Nom, Achat, Actuel) -->
+                <div class="md:col-span-3">
+                    <label for="add-item-name" class="block text-sm font-medium text-slate-300 mb-1">Nom</label>
+                    <input type="text" id="add-item-name" name="item-name" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="add-purchase-price" class="block text-sm font-medium text-slate-300 mb-1">Prix d'achat (€)</label>
+                    <input type="number" id="add-purchase-price" name="purchase-price" step="0.01" min="0" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="add-current-value" class="block text-sm font-medium text-slate-300 mb-1">Cote actuelle (€)</label>
+                    <input type="number" id="add-current-value" name="current-value" step="0.01" min="0" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Date cote</label>
+                    <div class="flex flex-wrap sm:flex-nowrap">
+                        <!-- Sélecteur Mois -->
+                        <div class="flex flex-col items-start mr-2 mb-2 sm:mb-0">
+                            <span class="text-xs text-slate-400">Mois</span>
+                            <div class="flex rounded-md shadow-sm">
+                                <input type="text" id="add-date-month" class="month-input rounded-l-md" value="11" readonly>
+                                <div class="flex flex-col border-l border-slate-800">
+                                    <button type="button" id="add-month-up" class="stepper-btn-v rounded-tr-md text-xs">▲</button>
+                                    <button type="button" id="add-month-down" class="stepper-btn-v rounded-br-md border-t border-slate-700 text-xs">▼</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Sélecteur Année -->
+                        <div class="flex flex-col items-start">
+                            <span class="text-xs text-slate-400">Année</span>
+                            <div class="flex rounded-md shadow-sm">
+                                <input type="text" id="add-date-year" class="year-input rounded-l-md" value="2025" readonly>
+                                <div class="flex flex-col border-l border-slate-800">
+                                    <button type="button" id="add-year-up" class="stepper-btn-v rounded-tr-md text-xs">▲</button>
+                                    <button type="button" id="add-year-down" class="stepper-btn-v rounded-br-md border-t border-slate-700 text-xs">▼</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:col-span-3">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-lg transition duration-200">Ajouter</button>
+                </div>
+            </form>
+            <div class="add-message-box mt-4 text-center"></div>
+        </div>
+    </div>
+
+    <!-- Modal de MODIFICATION d'item -->
+    <div id="edit-item-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-lg relative">
+            <button class="close-modal-btn absolute top-3 right-3 text-slate-400 hover:text-white transition-colors" aria-label="Fermer">
+                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h2 class="text-2xl font-semibold mb-4 text-white">Modifier l'item</h2>
+            <form id="edit-item-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="hidden" id="edit-item-id">
+                <input type="hidden" id="edit-item-old-value">
+                <!-- Champs du formulaire (Nom, Achat, Actuel) -->
+                <div class="md:col-span-3">
+                    <label for="edit-item-name" class="block text-sm font-medium text-slate-300 mb-1">Nom</label>
+                    <input type="text" id="edit-item-name" name="item-name" required class="w-full bg-slate-600 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                </div>
+                <div>
+                    <label for="edit-purchase-price" class="block text-sm font-medium text-slate-300 mb-1">Prix d'achat (€)</label>
+                    <input type="number" id="edit-purchase-price" name="purchase-price" step="0.01" min="0" required class="w-full bg-slate-600 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                </div>
+                <div>
+                    <label for="edit-current-value" class="block text-sm font-medium text-slate-300 mb-1">Cote actuelle (€)</label>
+                    <input type="number" id="edit-current-value" name="current-value" step="0.01" min="0" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Date cote</label>
+                    <div class="flex flex-wrap sm:flex-nowrap">
+                        <!-- Sélecteur Mois -->
+                        <div class="flex flex-col items-start mr-2 mb-2 sm:mb-0">
+                            <span class="text-xs text-slate-400">Mois</span>
+                            <div class="flex rounded-md shadow-sm">
+                                <input type="text" id="edit-date-month" class="month-input rounded-l-md" value="11" readonly>
+                                <div class="flex flex-col border-l border-slate-800">
+                                    <button type="button" id="edit-month-up" class="stepper-btn-v rounded-tr-md text-xs">▲</button>
+                                    <button type="button" id="edit-month-down" class="stepper-btn-v rounded-br-md border-t border-slate-700 text-xs">▼</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Sélecteur Année -->
+                        <div class="flex flex-col items-start">
+                            <span class="text-xs text-slate-400">Année</span>
+                            <div class="flex rounded-md shadow-sm">
+                                <input type="text" id="edit-date-year" class="year-input rounded-l-md" value="2025" readonly>
+                                <div class="flex flex-col border-l border-slate-800">
+                                    <button type="button" id="edit-year-up" class="stepper-btn-v rounded-tr-md text-xs">▲</button>
+                                    <button type="button" id="edit-year-down" class="stepper-btn-v rounded-br-md border-t border-slate-700 text-xs">▼</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:col-span-3">
+                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow-lg transition duration-200">Enregistrer</button>
+                </div>
+            </form>
+            <div class="edit-message-box mt-4 text-center"></div>
+        </div>
+    </div>
+
+    <!-- Modal GRAPHIQUE -->
+    <div id="chart-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-3xl relative">
+            <button class="close-modal-btn absolute top-3 right-3 text-slate-400 hover:text-white transition-colors" aria-label="Fermer">
+                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h2 id="chart-item-name" class="text-2xl font-semibold mb-4 text-white">Historique de la cote</h2>
+            <div class="bg-slate-900 p-4 rounded-md">
+                <canvas id="item-chart-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de CONFIRMATION Suppression -->
+    <div id="confirm-delete-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+            <h2 class="text-xl font-semibold mb-4 text-white">Confirmer la suppression</h2>
+            <p class="text-slate-300 mb-6">Voulez-vous vraiment supprimer cet item ? <br> <span id="confirm-delete-item-name" class="font-bold"></span></p>
+            <div class="flex justify-end space-x-4">
+                <button id="cancel-delete-btn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-md shadow-lg transition duration-200">Annuler</button>
+                <button id="confirm-delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md shadow-lg transition duration-200">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Imports Firebase -->
     <script type="module">
+        // Importations nécessaires depuis le SDK Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, doc, addDoc, deleteDoc, onSnapshot, 
+            collection, serverTimestamp, query, setLogLevel,
+            updateDoc, getDocs, getDoc, Timestamp
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Configuration et initialisation de Firebase
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
-        // --- Configuration Firebase (VOTRE CONFIGURATION) ---
+        let app, db, auth, userId, itemChart = null;
+        let deleteTargetId = null; // Pour la confirmation de suppression
         
-        const appId = 'pokemon-collection-public-id'; // ID d'application par défaut pour le chemin Firestore
-        
-        // VOS CLÉS INSÉRÉES ICI
-        const firebaseConfig = {
-          apiKey: "AIzaSyDcHQZc21k4zeFqv92EWr_Jf4Qe58h9COg",
-          authDomain: "pokemon-tcg-collection-6aa1b.firebaseapp.com",
-          projectId: "pokemon-tcg-collection-6aa1b",
-          storageBucket: "pokemon-tcg-collection-6aa1b.firebasestorage.app",
-          messagingSenderId: "480822280087",
-          appId: "1:480822280087:web:c880755db2cea43d660ed2"
-        };
-        
-        let db = null;
-        let auth = null;
-        let currentUserId = null;
-        let isAuthReady = false;
-        
-        // Éléments DOM (définition simplifiée)
-        const loadingStatusEl = document.getElementById('loading-status');
-        const addFormEl = document.getElementById('add-form');
-        const seriesSelectEl = document.getElementById('series-select');
-        const addButtonEl = document.getElementById('add-button');
-        const collectionListEl = document.getElementById('collection-list');
-        const emptyMessageEl = document.getElementById('empty-message');
-        const errorMsgEl = document.getElementById('error-message');
-        const userIdDisplayEl = document.getElementById('user-id-display');
-        const modalContainerEl = document.getElementById('modal-container');
-        const modalConfirmEl = document.getElementById('modal-confirm');
-        const modalCancelEl = document.getElementById('modal-cancel');
-        const modalTextEl = document.getElementById('modal-text');
+        // --- Éléments DOM ---
+        const itemList = document.getElementById('item-list');
+        const loadingMessage = document.getElementById('loading-message');
+        const userIdDisplay = document.getElementById('user-id-display');
 
-        // Variables d'état
-        let allPokemonSeries = [];
-        let userSeriesMap = {}; 
-        let pendingDeletionDocId = null; 
+        // Modal Ajout
+        const addModal = document.getElementById('add-item-modal');
+        const openAddModalBtn = document.getElementById('open-add-modal-btn');
+        const addItemForm = document.getElementById('add-item-form');
+        const addMessageBox = addModal.querySelector('.add-message-box');
+        const addMonthInput = document.getElementById('add-date-month');
+        const addYearInput = document.getElementById('add-date-year');
 
-        // Fonction pour afficher une erreur temporaire
-        function showMessage(element, message, isError = true) {
-            element.textContent = message;
-            element.classList.remove('hidden');
-            element.classList.add(isError ? 'text-red-500' : 'text-green-500');
-            setTimeout(() => {
-                element.classList.add('hidden');
-            }, 5000);
+        // Modal Modification
+        const editModal = document.getElementById('edit-item-modal');
+        const editItemForm = document.getElementById('edit-item-form');
+        const editMessageBox = editModal.querySelector('.edit-message-box');
+        const editMonthInput = document.getElementById('edit-date-month');
+        const editYearInput = document.getElementById('edit-date-year');
+
+        // Modal Graphique
+        const chartModal = document.getElementById('chart-modal');
+        const chartItemName = document.getElementById('chart-item-name');
+        const chartCanvas = document.getElementById('item-chart-canvas').getContext('2d');
+
+        // Modal Confirmation Suppression
+        const confirmDeleteModal = document.getElementById('confirm-delete-modal');
+        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        const confirmDeleteItemName = document.getElementById('confirm-delete-item-name');
+
+        // Boutons de fermeture
+        const allCloseModalBtns = document.querySelectorAll('.close-modal-btn');
+
+        // SVG Icônes
+        const iconUp = `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" /></svg>`;
+        const iconDown = `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-3.707-7.293l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414z" clip-rule="evenodd" /></svg>`;
+        const iconNeutral = `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z" clip-rule="evenodd" /></svg>`;
+        const iconEdit = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>`;
+        const iconDelete = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>`;
+
+
+        // --- Fonctions Utilitaires ---
+        function showMessage(box, text, isError = false) {
+            box.textContent = text;
+            box.className = isError 
+                ? 'mt-4 text-center text-red-400' 
+                : 'mt-4 text-center text-green-400';
+            setTimeout(() => { box.textContent = ''; }, 3000);
         }
 
-        // --- 1. Initialisation et Authentification Firebase ---
-        try {
-            // Initialisation unique
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            setLogLevel('debug'); 
-        } catch (e) {
-            console.error("Erreur d'initialisation Firebase:", e);
-            showMessage(errorMsgEl, "Erreur d'initialisation Firebase. Vérifiez vos clés.", true);
+        function calculateChange(purchase, current) {
+            if (purchase <= 0) return { percent: "N/A", colorClass: "text-slate-400", icon: iconNeutral };
+            const change = ((current - purchase) / purchase) * 100;
+            const isPositive = change > 0;
+            const isNegative = change < 0;
+            let colorClass = "text-slate-400", icon = iconNeutral;
+            if (isPositive) { colorClass = "text-green-500"; icon = iconUp; }
+            else if (isNegative) { colorClass = "text-red-500"; icon = iconDown; }
+            return { percent: `${isPositive ? '+' : ''}${change.toFixed(2)}%`, colorClass, icon };
         }
 
-        if (db && auth) {
-            // Tentative de connexion anonyme FORCÉE
-            signInAnonymously(auth)
-                .then((userCredential) => {
-                    currentUserId = userCredential.user.uid;
-                    isAuthReady = true;
-                    userIdDisplayEl.textContent = currentUserId;
-                    
-                    fetchPokemonSeries();
-                    setupSeriesListener();
-                })
-                .catch((error) => {
-                    console.error("Erreur de connexion anonyme Firebase:", error);
-                    userIdDisplayEl.textContent = 'Erreur Auth';
-                    showMessage(errorMsgEl, "Échec de la connexion (Auth). Sauvegarde impossible. Avez-vous activé l'authentification Anonyme?", true);
-                    isAuthReady = false;
-                    fetchPokemonSeries(); 
-                });
+        // --- Fonctions de Rendu ---
+        function renderItems(itemDocs) {
+            itemList.innerHTML = '';
+            loadingMessage.style.display = 'none';
 
-        } else {
-            // Si l'initialisation a échoué (les clés sont peut-être fausses)
-            userIdDisplayEl.textContent = 'Non disponible';
-            fetchPokemonSeries();
-        }
-
-
-        // --- 2. Fonctions API Pokémon TCG (AVEC PROXY CORS) ---
-        async function fetchPokemonSeries() {
-            loadingStatusEl.classList.remove('hidden');
-            addFormEl.classList.add('hidden');
-            errorMsgEl.classList.add('hidden');
-
-            // Utilisation d'un proxy pour éviter les problèmes de CORS
-            const API_URL = 'https://api.pokemontcg.io/v2/sets';
-            const CORS_PROXY = 'https://tcgproxy.netlify.app/proxy/'; 
-            
-            // La requête passe par le proxy
-            const FETCH_URL = `${CORS_PROXY}${encodeURIComponent(API_URL)}`;
-
-            try {
-                const response = await fetch(FETCH_URL);
-                
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status} - Le serveur API (via proxy) ne répond pas correctement.`);
-                }
-                
-                const data = await response.json();
-                
-                // Vérification si les données sont vides ou mal formées
-                if (!data || !data.data || data.data.length === 0) {
-                     throw new Error("L'API a répondu, mais n'a retourné aucune série de cartes.");
-                }
-
-                allPokemonSeries = data.data
-                    .filter(set => set.releaseDate) 
-                    .sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate));
-
-                renderSeriesOptions();
-                addFormEl.classList.remove('hidden');
-                addButtonEl.disabled = false;
-                loadingStatusEl.classList.add('hidden');
-
-            } catch (error) {
-                console.error("Erreur critique de récupération des séries Pokémon:", error);
-                loadingStatusEl.classList.add('hidden');
-                
-                // Message d'erreur plus spécifique
-                let msg = "Impossible de charger les séries TCG. ";
-                if (error.message.includes("HTTP")) {
-                    msg += error.message;
-                } else if (error.message.includes("Failed to fetch")) {
-                    msg += "Problème de réseau (DNS, CORS ou timeout). Vérifiez votre connexion.";
-                } else {
-                    msg += error.message;
-                }
-                showMessage(errorMsgEl, msg, true);
-            }
-        }
-
-        function renderSeriesOptions() {
-            seriesSelectEl.innerHTML = '<option value="" disabled selected>Sélectionnez une série...</option>';
-            allPokemonSeries.forEach(series => {
-                const option = document.createElement('option');
-                option.value = series.id;
-                option.textContent = `${series.name} (${series.id}) - Sortie: ${series.releaseDate}`;
-                seriesSelectEl.appendChild(option);
-            });
-        }
-
-        // --- 3. Fonctions Firestore (Lecture en temps réel) ---
-        function getCollectionPath() {
-            return `public_collections/${currentUserId}/pokemon_series`;
-        }
-
-        function setupSeriesListener() {
-            if (!isAuthReady || !db || !currentUserId) {
+            if (itemDocs.length === 0) {
+                itemList.innerHTML = `<p class="text-center text-slate-400">Votre portefeuille est vide. Ajoutez un item pour commencer !</p>`;
                 return;
             }
 
-            const seriesCollectionRef = collection(db, getCollectionPath());
-            const q = query(seriesCollectionRef);
-            
-            onSnapshot(q, (snapshot) => {
-                userSeriesMap = {}; 
-                const seriesList = [];
+            itemDocs.forEach(doc => {
+                const item = doc.data();
+                const id = doc.id;
+                const { percent, colorClass, icon } = calculateChange(item.purchasePrice, item.currentValue);
+
+                const itemCard = document.createElement('div');
+                itemCard.className = 'item-card bg-slate-800 rounded-lg shadow-lg p-4 flex justify-between items-center transition duration-200 hover:bg-slate-700 cursor-pointer';
                 
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const series = { 
-                        ...data, 
-                        docId: doc.id 
-                    };
-                    seriesList.push(series);
-                    userSeriesMap[data.id] = series; 
-                });
-                
-                seriesList.sort((a, b) => a.name.localeCompare(b.name));
-
-                renderUserSeriesList(seriesList);
-            }, (error) => {
-                console.error("Erreur de l'écouteur Firestore:", error);
-                showMessage(errorMsgEl, "Erreur de connexion à la base de données de votre collection.", true);
-            });
-        }
-
-        // --- 4. Fonctions Firestore (Écriture) ---
-
-        async function addSeries(seriesId) {
-            if (!isAuthReady || !db || !currentUserId) {
-                showMessage(errorMsgEl, "Authentification en cours ou Firebase non initialisé.", true);
-                return;
-            }
-
-            const selectedSeries = allPokemonSeries.find(s => s.id === seriesId);
-            if (!selectedSeries) return;
-
-            if (userSeriesMap[seriesId]) {
-                showMessage(errorMsgEl, `La série "${selectedSeries.name}" est déjà dans votre collection.`, true);
-                return;
-            }
-
-            try {
-                const seriesData = {
-                    id: selectedSeries.id,
-                    name: selectedSeries.name,
-                    releaseDate: selectedSeries.releaseDate,
-                    totalCards: selectedSeries.total,
-                    addedAt: serverTimestamp() 
-                };
-                
-                const seriesCollectionRef = collection(db, getCollectionPath());
-                const docRef = doc(seriesCollectionRef, seriesId); 
-                await setDoc(docRef, seriesData);
-
-                showMessage(errorMsgEl, `Série "${selectedSeries.name}" ajoutée avec succès!`, false);
-                seriesSelectEl.value = ""; 
-
-            } catch (error) {
-                console.error("Erreur lors de l'ajout de la série:", error);
-                showMessage(errorMsgEl, "Échec de l'ajout de la série. Vérifiez les permissions de votre base de données.", true);
-            }
-        }
-
-        async function removeSeries(docId) {
-            if (!isAuthReady || !db || !currentUserId) {
-                showMessage(errorMsgEl, "Authentification en cours ou Firebase non initialisé.", true);
-                return;
-            }
-
-            try {
-                const docRef = doc(db, getCollectionPath(), docId);
-                await deleteDoc(docRef);
-                showMessage(errorMsgEl, "Série supprimée de votre collection.", false);
-            } catch (error) {
-                console.error("Erreur lors de la suppression de la série:", error);
-                showMessage(errorMsgEl, "Échec de la suppression de la série. Vérifiez les permissions.", true);
-            } finally {
-                closeModal();
-            }
-        }
-
-        // --- 5. Rendu de la Liste Personnelle ---
-        function renderUserSeriesList(seriesList) {
-            collectionListEl.innerHTML = ''; 
-            
-            if (seriesList.length === 0) {
-                emptyMessageEl.classList.remove('hidden');
-                return;
-            }
-            emptyMessageEl.classList.add('hidden');
-
-            seriesList.forEach(series => {
-                const div = document.createElement('div');
-                div.className = 'flex justify-between items-center p-3 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition duration-200';
-                
-                const info = document.createElement('div');
-                info.innerHTML = `
-                    <p class="font-bold text-gray-800">${series.name}</p>
-                    <p class="text-sm text-gray-600">
-                        Total Cartes: ${series.totalCards} | Sortie: ${series.releaseDate}
-                    </p>
+                itemCard.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-lg font-semibold text-white truncate">${item.name}</h3>
+                        <p class="text-sm text-slate-400">Achat: <span class="font-medium text-slate-300">${item.purchasePrice.toFixed(2)} €</span></p>
+                        <p class="text-sm text-slate-400">Actuel: <span class="font-medium text-slate-300">${item.currentValue.toFixed(2)} €</span> 
+                            <span class="text-xs text-slate-500">(${item.currentValueDate || 'N/A'})</span>
+                        </p>
+                    </div>
+                    <div class="flex items-center space-x-2 mx-4 ${colorClass}">
+                        ${icon}
+                        <span class="text-lg font-bold">${percent}</span>
+                    </div>
+                    <div class="flex-shrink-0 flex space-x-2">
+                        <button data-id="${id}" class="edit-btn z-10 bg-yellow-500 hover:bg-yellow-600 text-white font-bold p-2 rounded-full transition duration-200" aria-label="Modifier l'item">
+                            ${iconEdit}
+                        </button>
+                        <button data-id="${id}" class="delete-btn z-10 bg-red-600 hover:bg-red-700 text-white font-bold p-2 rounded-full transition duration-200" aria-label="Supprimer l'item">
+                            ${iconDelete}
+                        </button>
+                    </div>
                 `;
                 
-                const deleteButton = document.createElement('button');
-                deleteButton.className = 'text-red-500 hover:text-red-700 p-2 rounded-full transition';
-                deleteButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
-                    </svg>`;
-                deleteButton.title = `Supprimer ${series.name}`;
-                deleteButton.addEventListener('click', () => openModal({ ...series, docId: series.id }));
+                itemList.appendChild(itemCard);
 
-                div.appendChild(info);
-                div.appendChild(deleteButton);
-                collectionListEl.appendChild(div);
+                // --- Ajout des écouteurs d'événements ---
+                // Bouton Supprimer
+                itemCard.querySelector('.delete-btn').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Empêche le clic de se propager à la carte
+                    handleDeleteItem(id, item.name);
+                });
+
+                // Bouton Modifier
+                itemCard.querySelector('.edit-btn').addEventListener('click', (e) => {
+                    e.stopPropagation(); // Empêche le clic de se propager à la carte
+                    handleOpenEditModal(id, item);
+                });
+
+                // Clic sur la carte (pour le graphique)
+                itemCard.addEventListener('click', (e) => {
+                    // Ne s'active que si on ne clique pas sur un bouton
+                    if (!e.target.closest('.delete-btn') && !e.target.closest('.edit-btn')) {
+                        handleShowChart(id, item);
+                    }
+                });
             });
         }
+
+        // --- Logique Firestore ---
+        function loadItems(uid) {
+            try {
+                const itemsCollectionRef = collection(db, 'artifacts', appId, 'users', uid, 'pokemonItems');
+                const q = query(itemsCollectionRef); // Pas de orderBy pour éviter erreur d'index
+                onSnapshot(q, (snapshot) => renderItems(snapshot.docs), (error) => {
+                    console.error("Erreur écoute items: ", error);
+                });
+            } catch (error) {
+                console.error("Erreur setup 'loadItems': ", error);
+            }
+        }
+
+        // *** FONCTION AJOUTÉE ***
+        async function handleAddItem(e) {
+            e.preventDefault();
+            if (!userId) { showMessage(addMessageBox, "Non authentifié.", true); return; }
+
+            const name = addItemForm['item-name'].value;
+            const purchasePrice = parseFloat(addItemForm['purchase-price'].value);
+            const currentValue = parseFloat(addItemForm['current-value'].value);
+            const month = addMonthInput.value;
+            const year = addYearInput.value;
+            const currentValueDate = `${month}/${year}`;
+
+            if (!name || isNaN(purchasePrice) || isNaN(currentValue) || !month || !year) {
+                showMessage(addMessageBox, "Veuillez remplir tous les champs.", true); return;
+            }
+            
+            try {
+                // 1. Ajouter l'item principal
+                const itemsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'pokemonItems');
+                const newItemDoc = await addDoc(itemsCollectionRef, {
+                    name, purchasePrice, currentValue, currentValueDate,
+                    createdAt: serverTimestamp() // Utiliser serverTimestamp pour la date de création
+                });
+                
+                // 2. Ajouter la première entrée à l'historique
+                const [addMonth, addYear] = currentValueDate.split('/');
+                const addJsDate = new Date(addYear, addMonth - 1, 1); // Mois est 0-indexé
+                const addFirestoreDate = Timestamp.fromDate(addJsDate);
+
+                const historyCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'pokemonItems', newItemDoc.id, 'valueHistory');
+                await addDoc(historyCollectionRef, {
+                    value: currentValue,
+                    date: addFirestoreDate
+                });
+
+                showMessage(addMessageBox, "Item ajouté !", false);
+                addItemForm.reset();
+                addModal.classList.add('hidden');
+
+            } catch (error) {
+                console.error("Erreur ajout item: ", error);
+                showMessage(addMessageBox, "Erreur lors de l'ajout.", true);
+            }
+        }
+        // *** FIN FONCTION AJOUTÉE ***
+
+        async function handleDeleteItem(id, name) {
+            if (!userId) return;
+            deleteTargetId = id;
+            confirmDeleteItemName.textContent = name;
+            confirmDeleteModal.classList.remove('hidden');
+        }
+
+        async function executeDelete() {
+            if (!userId || !deleteTargetId) return;
+            
+            const idToDelete = deleteTargetId;
+            deleteTargetId = null; // Réinitialiser avant l'opération
+            
+            // Note : Ceci ne supprime pas la sous-collection 'valueHistory'.
+            // Une suppression propre nécessiterait une Cloud Function.
+            // Pour cette app, c'est acceptable.
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'users', userId, 'pokemonItems', idToDelete);
+                await deleteDoc(docRef);
+                confirmDeleteModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Erreur suppression: ", error);
+                // Remettre l'ID si erreur
+                deleteTargetId = idToDelete; 
+            }
+        }
+
+        async function handleSaveEdit(e) {
+            e.preventDefault();
+            if (!userId) { showMessage(editMessageBox, "Non authentifié.", true); return; }
+
+            const id = editItemForm['edit-item-id'].value;
+            const currentValue = parseFloat(editItemForm['edit-current-value'].value);
+            const month = editMonthInput.value;
+            const year = editYearInput.value;
+            const currentValueDate = `${month}/${year}`;
+            const oldValue = parseFloat(editItemForm['edit-item-old-value'].value);
+            
+            if (!id || isNaN(currentValue) || !month || !year) {
+                 showMessage(editMessageBox, "Champs invalides.", true); return;
+            }
+            
+            try {
+                // 1. Mettre à jour l'item principal
+                const docRef = doc(db, 'artifacts', appId, 'users', userId, 'pokemonItems', id);
+                await updateDoc(docRef, { currentValue, currentValueDate });
+
+                // 2. Ajouter à l'historique SEULEMENT si la valeur a changé
+                if (currentValue !== oldValue) {
+                    const [editMonth, editYear] = currentValueDate.split('/');
+                    const editJsDate = new Date(editYear, editMonth - 1, 1); // Mois est 0-indexé
+                    const editFirestoreDate = Timestamp.fromDate(editJsDate);
+                    
+                    const historyCollectionRef = collection(docRef, 'valueHistory');
+                    await addDoc(historyCollectionRef, {
+                        value: currentValue,
+                        date: editFirestoreDate
+                    });
+                }
+                
+                showMessage(editMessageBox, "Modifications enregistrées !", false);
+                editModal.classList.add('hidden');
+
+            } catch (error) {
+                console.error("Erreur sauvegarde: ", error);
+                showMessage(editMessageBox, "Erreur sauvegarde.", true);
+            }
+        }
+
+        // --- Logique Modals & Graphique ---
+        function handleOpenEditModal(id, item) {
+            editItemForm['edit-item-id'].value = id;
+            editItemForm['edit-item-name'].value = item.name;
+            editItemForm['edit-purchase-price'].value = item.purchasePrice;
+            editItemForm['edit-current-value'].value = item.currentValue;
+            
+            const [month, year] = (item.currentValueDate || '11/2025').split('/');
+            editMonthInput.value = month.padStart(2, '0');
+            editYearInput.value = year;
+
+            editItemForm['edit-item-old-value'].value = item.currentValue; // Stocker l'ancienne valeur
+            editModal.classList.remove('hidden');
+        }
+
+        async function handleShowChart(id, item) {
+            if (!userId) return;
+            chartItemName.textContent = `Historique de: ${item.name}`;
+            
+            try {
+                // 1. Récupérer l'historique
+                const historyRef = collection(db, 'artifacts', appId, 'users', userId, 'pokemonItems', id, 'valueHistory');
+                const historyQuery = query(historyRef); // Pas de orderBy
+                const snapshot = await getDocs(historyQuery);
+                
+                // 2. Trier les données en JS car Fimrebase requiert un index pour orderBy
+                const historyData = snapshot.docs
+                    .map(doc => doc.data())
+                    .filter(d => d.date) // S'assurer que la date existe
+                    .sort((a, b) => a.date.seconds - b.date.seconds);
+
+                const labels = historyData.map(d => {
+                    const date = new Date(d.date.seconds * 1000);
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${month}/${year}`;
+                });
+                const values = historyData.map(d => d.value);
+
+                // 3. Détruire l'ancien graphique s'il existe
+                if (itemChart) {
+                    itemChart.destroy();
+                }
+
+                // 4. Créer le nouveau graphique
+                itemChart = new Chart(chartCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Cote Actuelle (€)',
+                                data: values,
+                                borderColor: 'rgb(59, 130, 246)', // Bleu
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                fill: true,
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Prix Achat (€)',
+                                data: Array(labels.length).fill(item.purchasePrice),
+                                borderColor: 'rgb(234, 179, 8)', // Jaune
+                                borderDash: [5, 5],
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        scales: {
+                            y: { beginAtZero: true } // Changé de false à true
+                        }
+                    }
+                });
+
+                chartModal.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Erreur chargement graphique: ", error);
+            }
+        }
+
+        /**
+         * Configure les boutons stepper pour un sélecteur de date (mois/année).
+         * @param {HTMLInputElement} monthInput - L'input du mois
+         * @param {HTMLButtonElement} monthUp - Bouton mois +
+         * @param {HTMLButtonElement} monthDown - Bouton mois -
+         * @param {HTMLInputElement} yearInput - L'input de l'année
+         * @param {HTMLButtonElement} yearUp - Bouton année +
+         * @param {HTMLButtonElement} yearDown - Bouton année -
+         */
+        function setupDateStepper(monthInput, monthUp, monthDown, yearInput, yearUp, yearDown) {
+            monthUp.addEventListener('click', () => {
+                let m = parseInt(monthInput.value);
+                m = (m % 12) + 1; // 12 -> 1, 1 -> 2
+                monthInput.value = m.toString().padStart(2, '0');
+            });
+            monthDown.addEventListener('click', () => {
+                let m = parseInt(monthInput.value);
+                m = (m === 1) ? 12 : m - 1; // 1 -> 12, 2 -> 1
+                monthInput.value = m.toString().padStart(2, '0');
+            });
+            yearUp.addEventListener('click', () => {
+                yearInput.value = parseInt(yearInput.value) + 1;
+            });
+            yearDown.addEventListener('click', () => {
+                let y = parseInt(yearInput.value);
+                if (y > 1990) { // Bloque à l'an 1990
+                    yearInput.value = y - 1;
+                }
+            });
+        }
+
+        // --- Point d'entrée principal ---
+        async function main() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('Debug');
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdDisplay.textContent = userId;
+                        loadItems(userId);
+                    } else {
+                        userId = null;
+                        userIdDisplay.textContent = 'Non connecté';
+                        await attemptSignIn();
+                    }
+                });
+                
+                // --- Écouteurs d'événements globaux ---
+                addItemForm.addEventListener('submit', handleAddItem);
+                editItemForm.addEventListener('submit', handleSaveEdit);
+                
+                // Configurer les steppers de date
+                setupDateStepper(
+                    addMonthInput,
+                    document.getElementById('add-month-up'),
+                    document.getElementById('add-month-down'),
+                    addYearInput,
+                    document.getElementById('add-year-up'),
+                    document.getElementById('add-year-down')
+                );
+                setupDateStepper(
+                    editMonthInput,
+                    document.getElementById('edit-month-up'),
+                    document.getElementById('edit-month-down'),
+                    editYearInput,
+                    document.getElementById('edit-year-up'),
+                    document.getElementById('edit-year-down')
+                );
+                
+                // --- Écouteurs Modals ---
+                
+                // Ouvrir modal Ajout
+                openAddModalBtn.addEventListener('click', () => {
+                    // Pré-remplir la date actuelle
+                    const now = new Date();
+                    addMonthInput.value = (now.getMonth() + 1).toString().padStart(2, '0');
+                    addYearInput.value = now.getFullYear().toString();
+                    
+                    addModal.classList.remove('hidden');
+                });
+                
+                // Fermer tous les modals
+                allCloseModalBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        btn.closest('.fixed').classList.add('hidden');
+                    });
+                });
+                
+                // Fermer en cliquant sur l'overlay
+                [addModal, editModal, chartModal, confirmDeleteModal].forEach(modal => {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            modal.classList.add('hidden');
+                            if (modal === confirmDeleteModal) {
+                                deleteTargetId = null; // Annuler la suppression si on clique à côté
+                            }
+                        }
+                    });
+                });
+
+                // Écouteurs Modal Suppression
+                cancelDeleteBtn.addEventListener('click', () => {
+                    confirmDeleteModal.classList.add('hidden');
+                    deleteTargetId = null;
+                });
+                confirmDeleteBtn.addEventListener('click', executeDelete);
+
+            } catch (error) {
+                console.error("Erreur d'initialisation:", error);
+                loadingMessage.textContent = "Erreur d'initialisation.";
+            }
+        }
         
-        // --- 6. Logique Modale (Confirmation) ---
-        function openModal(series) {
-            pendingDeletionDocId = series.docId; 
-            modalTextEl.innerHTML = `Êtes-vous sûr de vouloir supprimer définitivement la série <span class="font-bold">${series.name}</span> de votre collection ?`;
-            modalContainerEl.classList.remove('hidden');
-        }
-
-        function closeModal() {
-            pendingDeletionDocId = null;
-            modalContainerEl.classList.add('hidden');
-        }
-
-        modalConfirmEl.addEventListener('click', () => {
-            if (pendingDeletionDocId) {
-                removeSeries(pendingDeletionDocId);
+        async function attemptSignIn() {
+             try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Erreur d'authentification:", error);
             }
-        });
-
-        modalCancelEl.addEventListener('click', closeModal);
-
-        // --- 7. Gestionnaires d'Événements de l'Application ---
-        addButtonEl.addEventListener('click', () => {
-            const selectedId = seriesSelectEl.value;
-            if (selectedId) {
-                addSeries(selectedId);
-            } else {
-                showMessage(errorMsgEl, "Veuillez sélectionner une série avant d'ajouter.", true);
-            }
-        });
-
-        seriesSelectEl.addEventListener('change', () => {
-             errorMsgEl.classList.add('hidden');
-        });
-
-        // --- 8. Enregistrement du Service Worker (Intégré pour éviter les erreurs de chemin) ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // Service Worker minimal intégré pour l'installation PWA
-                const swContent = `
-                    const CACHE_NAME = 'pokemon-collection-cache-v1';
-                    const urlsToCache = ['/', '/index.html
+        }
+        main();
+    </script>
+</body>
+</html>
