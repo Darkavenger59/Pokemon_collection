@@ -132,12 +132,9 @@
                     <label for="add-purchase-price" class="block text-sm font-medium text-slate-300 mb-1">Prix d'achat (€)</label>
                     <input type="number" id="add-purchase-price" name="purchase-price" step="0.01" min="0" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
+                <!-- Le champ "Cote actuelle" a été supprimé du formulaire d'ajout -->
                 <div>
-                    <label for="add-current-value" class="block text-sm font-medium text-slate-300 mb-1">Cote actuelle (€)</label>
-                    <input type="number" id="add-current-value" name="current-value" step="0.01" min="0" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-300 mb-1">Date cote</label>
+                    <label class="block text-sm font-medium text-slate-300 mb-1">Date d'achat</label>
                     <div class="flex flex-wrap sm:flex-nowrap">
                         <!-- Sélecteur Mois -->
                         <div class="flex flex-col items-start mr-2 mb-2 sm:mb-0">
@@ -367,7 +364,7 @@
                 
                 itemCard.innerHTML = `
                     <div class="flex-1 min-w-0">
-                        <h3 class="text-lg font-semibold text-white truncate">${item.name}</h3>
+                        <h3 class="text-lg font-semibold text-white break-words">${item.name}</h3>
                         <p class="text-sm text-slate-400">Achat: <span class="font-medium text-slate-300">${item.purchasePrice.toFixed(2)} €</span></p>
                         <p class="text-sm text-slate-400">Actuel: <span class="font-medium text-slate-300">${item.currentValue.toFixed(2)} €</span> 
                             <span class="text-xs text-slate-500">(${item.currentValueDate || 'N/A'})</span>
@@ -435,15 +432,15 @@
             const block = addItemForm['item-block'].value;
             const setName = addItemForm['item-set-name'].value;
             const purchasePrice = parseFloat(addItemForm['purchase-price'].value);
-            const currentValue = parseFloat(addItemForm['current-value'].value);
+            // currentValue n'est plus lu depuis le formulaire
             const month = addMonthInput.value;
             const year = addYearInput.value;
-            const currentValueDate = `${month}/${year}`;
+            const currentValueDate = `${month}/${year}`; // Ceci est maintenant la date d'achat
             
             // Combiner les champs en un seul nom
             const combinedName = `${nature} (${block}) - ${setName}`;
 
-            if (!nature || !block || !setName || isNaN(purchasePrice) || isNaN(currentValue) || !month || !year) {
+            if (!nature || !block || !setName || isNaN(purchasePrice) || !month || !year) { // Retiré: isNaN(currentValue)
                 showMessage(addMessageBox, "Veuillez remplir tous les champs.", true); return;
             }
             
@@ -453,7 +450,9 @@
                 const itemsCollectionRef = collection(db, 'users', userId, 'pokemonItems');
                 const newItemDoc = await addDoc(itemsCollectionRef, {
                     name: combinedName, // Utiliser le nom combiné
-                    purchasePrice, currentValue, currentValueDate,
+                    purchasePrice, 
+                    currentValue: purchasePrice, // La valeur actuelle est initialisée au prix d'achat
+                    currentValueDate, // Date (d'achat)
                     createdAt: serverTimestamp() // Utiliser serverTimestamp pour la date de création
                 });
                 
@@ -465,7 +464,7 @@
                 // Modification: Utiliser un chemin plus simple
                 const historyCollectionRef = collection(db, 'users', userId, 'pokemonItems', newItemDoc.id, 'valueHistory');
                 await addDoc(historyCollectionRef, {
-                    value: currentValue,
+                    value: purchasePrice, // La première entrée de l'historique est le prix d'achat
                     date: addFirestoreDate
                 });
 
