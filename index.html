@@ -112,22 +112,26 @@
             </button>
             <h2 class="text-2xl font-semibold mb-4 text-white">Ajouter un item</h2>
             <form id="add-item-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Champs du formulaire (Nom, Achat, Actuel) -->
-                <!-- Nature de l'item -->
-                <div>
-                    <label for="add-item-nature" class="block text-sm font-medium text-slate-300 mb-1">Nature de l'item</label>
-                    <input type="text" id="add-item-nature" name="item-nature" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ETB, Display, Coffret...">
+                
+                <!-- Conteneur pour les 3 champs de nom -->
+                <div class="md:col-span-3 grid grid-cols-3 gap-2">
+                    <!-- Nature de l'item -->
+                    <div>
+                        <label for="add-item-nature" class="block text-xs font-medium text-slate-300 mb-1">Nature</label>
+                        <input type="text" id="add-item-nature" name="item-nature" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="ETB...">
+                    </div>
+                    <!-- Bloc/Série -->
+                    <div>
+                        <label for="add-item-block" class="block text-xs font-medium text-slate-300 mb-1">Bloc</label>
+                        <input type="text" id="add-item-block" name="item-block" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="SWSH...">
+                    </div>
+                    <!-- Nom de la série -->
+                    <div>
+                        <label for="add-item-set-name" class="block text-xs font-medium text-slate-300 mb-1">Série</label>
+                        <input type="text" id="add-item-set-name" name="item-set-name" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Célébrations...">
+                    </div>
                 </div>
-                <!-- Bloc/Série -->
-                <div>
-                    <label for="add-item-block" class="block text-sm font-medium text-slate-300 mb-1">Bloc/Série</label>
-                    <input type="text" id="add-item-block" name="item-block" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="SWSH, SV, WOTC...">
-                </div>
-                <!-- Nom de la série -->
-                <div>
-                    <label for="add-item-set-name" class="block text-sm font-medium text-slate-300 mb-1">Nom de la série</label>
-                    <input type="text" id="add-item-set-name" name="item-set-name" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Célébrations, Évolution Céleste...">
-                </div>
+
                 <div>
                     <label for="add-purchase-price" class="block text-sm font-medium text-slate-300 mb-1">Prix d'achat (€)</label>
                     <input type="number" id="add-purchase-price" name="purchase-price" step="0.01" min="0" required class="w-full bg-slate-700 border border-slate-600 rounded-md shadow-sm py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
