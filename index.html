@@ -231,11 +231,24 @@
             updateDoc, getDocs, getDoc, Timestamp
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Configuration et initialisation de Firebase
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyDcHQZc21k4zeFqv92EWr_Jf4Qe58h9COg",
+          authDomain: "pokemon-tcg-collection-6aa1b.firebaseapp.com",
+          projectId: "pokemon-tcg-collection-6aa1b",
+          storageBucket: "pokemon-tcg-collection-6aa1b.firebasestorage.app",
+          messagingSenderId: "480822280087",
+          appId: "1:480822280087:web:c880758db2cea43d660ed2"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
         
-        let app, db, auth, userId, itemChart = null;
+        // La variable appId n'est plus nécessaire pour le chemin simplifié
+        
+        let userId, itemChart = null;
         let deleteTargetId = null; // Pour la confirmation de suppression
         
         // --- Éléments DOM ---
@@ -368,7 +381,8 @@
         // --- Logique Firestore ---
         function loadItems(uid) {
             try {
-                const itemsCollectionRef = collection(db, 'artifacts', appId, 'users', uid, 'pokemonItems');
+                // Modification: Utiliser un chemin plus simple
+                const itemsCollectionRef = collection(db, 'users', uid, 'pokemonItems');
                 const q = query(itemsCollectionRef); // Pas de orderBy pour éviter erreur d'index
                 onSnapshot(q, (snapshot) => renderItems(snapshot.docs), (error) => {
                     console.error("Erreur écoute items: ", error);
@@ -396,7 +410,8 @@
             
             try {
                 // 1. Ajouter l'item principal
-                const itemsCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'pokemonItems');
+                // Modification: Utiliser un chemin plus simple
+                const itemsCollectionRef = collection(db, 'users', userId, 'pokemonItems');
                 const newItemDoc = await addDoc(itemsCollectionRef, {
                     name, purchasePrice, currentValue, currentValueDate,
                     createdAt: serverTimestamp() // Utiliser serverTimestamp pour la date de création
@@ -407,7 +422,8 @@
                 const addJsDate = new Date(addYear, addMonth - 1, 1); // Mois est 0-indexé
                 const addFirestoreDate = Timestamp.fromDate(addJsDate);
 
-                const historyCollectionRef = collection(db, 'artifacts', appId, 'users', userId, 'pokemonItems', newItemDoc.id, 'valueHistory');
+                // Modification: Utiliser un chemin plus simple
+                const historyCollectionRef = collection(db, 'users', userId, 'pokemonItems', newItemDoc.id, 'valueHistory');
                 await addDoc(historyCollectionRef, {
                     value: currentValue,
                     date: addFirestoreDate
@@ -441,7 +457,8 @@
             // Une suppression propre nécessiterait une Cloud Function.
             // Pour cette app, c'est acceptable.
             try {
-                const docRef = doc(db, 'artifacts', appId, 'users', userId, 'pokemonItems', idToDelete);
+                // Modification: Utiliser un chemin plus simple
+                const docRef = doc(db, 'users', userId, 'pokemonItems', idToDelete);
                 await deleteDoc(docRef);
                 confirmDeleteModal.classList.add('hidden');
             } catch (error) {
@@ -468,7 +485,8 @@
             
             try {
                 // 1. Mettre à jour l'item principal
-                const docRef = doc(db, 'artifacts', appId, 'users', userId, 'pokemonItems', id);
+                // Modification: Utiliser un chemin plus simple
+                const docRef = doc(db, 'users', userId, 'pokemonItems', id);
                 await updateDoc(docRef, { currentValue, currentValueDate });
 
                 // 2. Ajouter à l'historique SEULEMENT si la valeur a changé
@@ -514,7 +532,8 @@
             
             try {
                 // 1. Récupérer l'historique
-                const historyRef = collection(db, 'artifacts', appId, 'users', userId, 'pokemonItems', id, 'valueHistory');
+                // Modification: Utiliser un chemin plus simple
+                const historyRef = collection(db, 'users', userId, 'pokemonItems', id, 'valueHistory');
                 const historyQuery = query(historyRef); // Pas de orderBy
                 const snapshot = await getDocs(historyQuery);
                 
@@ -610,9 +629,7 @@
         // --- Point d'entrée principal ---
         async function main() {
             try {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
+                // L'initialisation (app, db, auth) est déjà faite à l'extérieur.
                 setLogLevel('Debug');
 
                 onAuthStateChanged(auth, async (user) => {
@@ -690,16 +707,16 @@
             } catch (error) {
                 console.error("Erreur d'initialisation:", error);
                 loadingMessage.textContent = "Erreur d'initialisation.";
+                userIdDisplay.textContent = "Erreur"; // Mettre à jour l'affichage
             }
         }
         
         async function attemptSignIn() {
              try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // Modification : Supprimer la vérification de __initial_auth_token
+                // car il ne correspond pas à votre projet Firebase personnel.
+                // Forcer l'authentification anonyme.
+                await signInAnonymously(auth);
             } catch (error) {
                 console.error("Erreur d'authentification:", error);
             }
