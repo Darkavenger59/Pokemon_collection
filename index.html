@@ -3,25 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portefeuille Pokémon Scellé</title>
-    <!-- Chargement de TailwindCSS -->
+    <title>Portefeuille Pokémon</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chargement de Chart.js pour les graphiques -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
-    
-    <!-- ... (Configuration Tailwind et style) ... -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                },
-            },
-        }
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
         /* Style pour le canvas du graphique */
@@ -66,50 +50,41 @@
 </head>
 <body class="h-full bg-slate-900 text-slate-100 font-sans p-4 md:p-8">
 
-    <div class="max-w-3xl mx-auto">
+    <!-- Conteneur principal -->
+    <div class="max-w-7xl mx-auto">
         
-        <!-- Titre de l'application -->
-        <header class="mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-center text-yellow-400">
-                Mon Portefeuille Pokémon
-            </h1>
-            <p class="text-center text-slate-400 text-lg">
-                Suivi de vos items scellés
-            </p>
+        <!-- En-tête -->
+        <header class="flex flex-col sm:flex-row justify-between sm:items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-white">Portefeuille Pokémon</h1>
+                <p class="text-sm text-slate-400">Connecté en tant que: <span id="user-id-display" class="font-medium text-slate-300">N/A</span></p>
+            </div>
+            <button id="open-add-modal-btn" class="mt-4 sm:mt-0 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-lg transition duration-200">
+                Ajouter un item
+            </button>
         </header>
 
-        <!-- Bouton pour ouvrir le modal d'ajout -->
-        <section class="mb-8">
-            <button id="open-add-modal-btn"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-5 rounded-md shadow-lg transition duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 flex items-center justify-center space-x-2">
-                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                </svg>
-                <span>Ajouter un item</span>
-            </button>
-        </section>
+        <!-- Message de chargement -->
+        <div id="loading-message" class="text-center text-slate-400 py-8">
+            Chargement de la collection...
+        </div>
 
-        <!-- Liste des items -->
-        <section>
-            <h2 class="text-2xl font-semibold mb-4 text-white">Ma Collection</h2>
-            <div id="item-list" class="space-y-4">
-                <p id="loading-message" class="text-center text-slate-400">Chargement de vos items...</p>
-            </div>
-        </section>
+        <!-- Grille de la collection -->
+        <!-- Ajout de pb-24 (padding-bottom: 6rem) pour laisser de la place au footer -->
+        <div id="item-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-24">
+            <!-- Les items seront insérés ici par JS -->
+        </div>
 
-        <footer class="mt-8 text-center text-xs text-slate-500">
-            <p>Connecté en tant que: <span id="user-id-display">N/A</span></p>
-        </footer>
     </div>
 
-    <!-- ===== MODALS ===== -->
-
-    <!-- Modal d'AJOUT d'item -->
-    <div id="add-item-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-lg relative">
-            <button class="close-modal-btn absolute top-3 right-3 text-slate-400 hover:text-white transition-colors" aria-label="Fermer">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+    <!-- Modal Ajout d'item -->
+    <div id="add-item-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-40">
+        <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-2xl relative">
+            <!-- Bouton Fermer -->
+            <button class="close-modal-btn absolute top-3 right-3 text-slate-400 hover:text-white" aria-label="Fermer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
+
             <h2 class="text-2xl font-semibold mb-4 text-white">Ajouter un item</h2>
             <form id="add-item-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 
@@ -166,18 +141,20 @@
                 </div>
                 <div class="md:col-span-3">
                     <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-lg transition duration-200">Ajouter</button>
+                    <div class="add-message-box text-center text-sm mt-2 h-4"></div>
                 </div>
             </form>
-            <div class="add-message-box mt-4 text-center"></div>
         </div>
     </div>
 
-    <!-- Modal de MODIFICATION d'item -->
+    <!-- Modal Modification -->
     <div id="edit-item-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-lg relative">
-            <button class="close-modal-btn absolute top-3 right-3 text-slate-400 hover:text-white transition-colors" aria-label="Fermer">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-2xl relative">
+            <!-- Bouton Fermer -->
+            <button class="close-modal-btn absolute top-3 right-3 text-slate-400 hover:text-white" aria-label="Fermer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
+
             <h2 class="text-2xl font-semibold mb-4 text-white">Modifier l'item</h2>
             <form id="edit-item-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <input type="hidden" id="edit-item-id">
@@ -224,19 +201,20 @@
                 </div>
                 <div class="md:col-span-3">
                     <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow-lg transition duration-200">Enregistrer</button>
+                    <div class="edit-message-box text-center text-sm mt-2 h-4"></div>
                 </div>
             </form>
-            <div class="edit-message-box mt-4 text-center"></div>
         </div>
     </div>
-
-    <!-- Modal GRAPHIQUE -->
+    
+    <!-- Modal Graphique -->
     <div id="chart-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
         <div class="bg-slate-800 rounded-lg shadow-xl p-6 w-full max-w-3xl relative">
-            <button class="close-modal-btn absolute top-3 right-3 text-slate-400 hover:text-white transition-colors" aria-label="Fermer">
-                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            <!-- Bouton Fermer -->
+            <button class="close-modal-btn absolute top-3 right-3 text-slate-400 hover:text-white" aria-label="Fermer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-            <h2 id="chart-item-name" class="text-2xl font-semibold mb-4 text-white">Historique de la cote</h2>
+            <h2 id="chart-item-name" class="text-2xl font-semibold mb-4 text-white">Historique</h2>
             <div class="bg-slate-900 p-4 rounded-md">
                 <canvas id="item-chart-canvas"></canvas>
             </div>
@@ -255,11 +233,39 @@
         </div>
     </div>
 
+    <!-- *** NOUVEAU BANDEAU RÉCAPITULATIF *** -->
+    <footer class="fixed bottom-0 left-0 w-full bg-slate-900 border-t border-slate-700 p-4 shadow-lg z-30">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center space-y-2 sm:space-y-0 text-sm">
+            
+            <!-- Totaux -->
+            <div class="flex space-x-4">
+                <div>
+                    <span class="text-slate-400 block text-xs">Achat Total</span>
+                    <span id="global-purchase" class="font-bold text-slate-100 text-base">0.00 €</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-xs">Valeur Totale</span>
+                    <span id="global-value" class="font-bold text-slate-100 text-base">0.00 €</span>
+                </div>
+            </div>
+
+            <!-- Performance Globale -->
+            <div id="global-performance" class="flex items-center space-x-2">
+                <!-- Icône (sera ajoutée par JS) -->
+                <span id="global-icon" class="text-base"></span>
+                <!-- Pourcentage (sera ajouté par JS) -->
+                <span id="global-percent" class="text-lg font-bold">0.00%</span>
+            </div>
+        </div>
+    </footer>
+    <!-- *** FIN DU NOUVEAU BANDEAU *** -->
+
+
     <!-- Imports Firebase -->
     <script type="module">
         // Importations nécessaires depuis le SDK Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { 
             getFirestore, doc, addDoc, deleteDoc, onSnapshot, 
             collection, serverTimestamp, query, setLogLevel,
@@ -281,7 +287,8 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
         
-        // La variable appId n'est plus nécessaire pour le chemin simplifié
+        // Utiliser le projectId pour le chemin de la base de données
+        const appId = firebaseConfig.projectId; 
         
         let userId, itemChart = null;
         let deleteTargetId = null; // Pour la confirmation de suppression
@@ -290,10 +297,17 @@
         const itemList = document.getElementById('item-list');
         const loadingMessage = document.getElementById('loading-message');
         const userIdDisplay = document.getElementById('user-id-display');
+        const openAddModalBtn = document.getElementById('open-add-modal-btn');
+
+        // Éléments du bandeau récapitulatif
+        const globalPurchaseEl = document.getElementById('global-purchase');
+        const globalValueEl = document.getElementById('global-value');
+        const globalPerformanceEl = document.getElementById('global-performance');
+        const globalIconEl = document.getElementById('global-icon');
+        const globalPercentEl = document.getElementById('global-percent');
 
         // Modal Ajout
         const addModal = document.getElementById('add-item-modal');
-        const openAddModalBtn = document.getElementById('open-add-modal-btn');
         const addItemForm = document.getElementById('add-item-form');
         const addMessageBox = addModal.querySelector('.add-message-box');
         const addMonthInput = document.getElementById('add-date-month');
@@ -320,122 +334,113 @@
         // Boutons de fermeture
         const allCloseModalBtns = document.querySelectorAll('.close-modal-btn');
 
-        // SVG Icônes
-        const iconUp = `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" /></svg>`;
-        const iconDown = `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-3.707-7.293l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414z" clip-rule="evenodd" /></svg>`;
-        const iconNeutral = `<svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z" clip-rule="evenodd" /></svg>`;
-        const iconEdit = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>`;
-        const iconDelete = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>`;
+        // Icônes (SVG)
+        const iconUp = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12 7a1 1 0 11-2 0 1 1 0 012 0zm-1-4a1 1 0 011 1v2.586l1.707-1.707a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L9 6.586V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>`;
+        const iconDown = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 13a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414L9 10.586V7a1 1 0 112 0v3.586l1.707-1.707a1 1 0 111.414 1.414l-3 3zM10 3a1 1 0 011 1v.01a1 1 0 11-2 0V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>`;
+        const iconNeutral = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-7.536 5.879a1 1 0 011.414 0L10 12.586l1.121-1.707a1 1 0 111.768 1.15l-1.5 2.25a1 1 0 01-1.768 0L7.385 13.33a1 1 0 01-.92-1.451z" clip-rule="evenodd" /></svg>`;
+        const iconDelete = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>`;
+        const iconEdit = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>`;
 
-
-        // --- Fonctions Utilitaires ---
-        function showMessage(box, text, isError = false) {
-            box.textContent = text;
-            box.className = isError 
-                ? 'mt-4 text-center text-red-400' 
-                : 'mt-4 text-center text-green-400';
-            setTimeout(() => { box.textContent = ''; }, 3000);
-        }
-
-        function calculateChange(purchase, current) {
-            if (purchase <= 0) return { percent: "N/A", colorClass: "text-slate-400", icon: iconNeutral };
-            const change = ((current - purchase) / purchase) * 100;
-            const isPositive = change > 0;
-            const isNegative = change < 0;
-            let colorClass = "text-slate-400", icon = iconNeutral;
-            if (isPositive) { colorClass = "text-green-500"; icon = iconUp; }
-            else if (isNegative) { colorClass = "text-red-500"; icon = iconDown; }
-            return { percent: `${isPositive ? '+' : ''}${change.toFixed(2)}%`, colorClass, icon };
-        }
-
-        // --- Fonctions de Rendu ---
-        function renderItems(itemDocs) {
-            itemList.innerHTML = '';
-            loadingMessage.style.display = 'none';
-
-            if (itemDocs.length === 0) {
-                itemList.innerHTML = `<p class="text-center text-slate-400">Votre portefeuille est vide. Ajoutez un item pour commencer !</p>`;
-                return;
+        // --- Logique d'authentification ---
+        async function attemptSignIn() {
+            try {
+                // S'il n'y a pas de token (déploiement hors Canvas), utiliser l'auth anonyme
+                await signInAnonymously(auth);
+            } catch (error)
+            {
+                console.error("Erreur d'authentification:", error);
+                userIdDisplay.textContent = "Erreur Auth";
+                loadingMessage.textContent = "Erreur: L'authentification a échoué.";
             }
+        }
 
-            itemDocs.forEach(doc => {
-                const item = doc.data();
-                const id = doc.id;
-                const { percent, colorClass, icon } = calculateChange(item.purchasePrice, item.currentValue);
+        // --- Logique principale de l'application ---
 
-                const itemCard = document.createElement('div');
-                itemCard.className = 'item-card bg-slate-800 rounded-lg shadow-lg p-4 flex flex-col transition duration-200 hover:bg-slate-700 cursor-pointer';
-                
-                itemCard.innerHTML = `
-                    <!-- Partie Nom/Prix (prend toute la largeur) -->
-                    <div class="w-full">
-                        <h3 class="text-lg font-semibold text-white break-words">${item.name}</h3>
-                        <p class="text-sm text-slate-400">Achat: <span class="font-medium text-slate-300">${item.purchasePrice.toFixed(2)} €</span></p>
-                        <p class="text-sm text-slate-400">Actuel: <span class="font-medium text-slate-300">${item.currentValue.toFixed(2)} €</span> 
-                            <span class="text-xs text-slate-500">(${item.currentValueDate || 'N/A'})</span>
-                        </p>
-                    </div>
+        // Écoute les items de l'utilisateur
+        function listenToItems(uid) {
+            // Modification: Utiliser un chemin plus simple
+            const itemsCollectionRef = collection(db, 'users', uid, 'pokemonItems');
+            const q = query(itemsCollectionRef);
+
+            onSnapshot(q, (snapshot) => {
+                loadingMessage.classList.add('hidden');
+                itemList.innerHTML = ''; // Nettoyer la liste
+                const itemDocs = snapshot.docs;
+
+                if (itemDocs.length === 0) {
+                    itemList.innerHTML = `<p class="text-slate-400 col-span-full text-center">Aucun item dans votre collection. Ajoutez-en un !</p>`;
+                }
+
+                itemDocs.forEach(doc => {
+                    const item = doc.data();
+                    const id = doc.id;
+                    const { percent, colorClass, icon } = calculateChange(item.purchasePrice, item.currentValue);
+
+                    const itemCard = document.createElement('div');
+                    itemCard.className = 'item-card bg-slate-800 rounded-lg shadow-lg p-4 flex flex-col transition duration-200 hover:bg-slate-700 cursor-pointer';
                     
-                    <!-- Séparateur -->
-                    <hr class="border-slate-700 my-3">
-
-                    <!-- Partie Bas: Évolution et Boutons -->
-                    <div class="w-full flex justify-between items-center">
-                        <div class="flex items-center space-x-2 ${colorClass}">
-                            ${icon}
-                            <span class="text-lg font-bold">${percent}</span>
+                    itemCard.innerHTML = `
+                        <!-- Partie Nom/Prix (prend toute la largeur) -->
+                        <div class="w-full">
+                            <h3 class="text-lg font-semibold text-white break-words">${item.name}</h3>
+                            <p class="text-sm text-slate-400">Achat: <span class="font-medium text-slate-300">${item.purchasePrice.toFixed(2)} €</span></p>
+                            <p class="text-sm text-slate-400">Actuel: <span class="font-medium text-slate-300">${item.currentValue.toFixed(2)} €</span> 
+                                <span class="text-xs text-slate-500">(${item.currentValueDate || 'N/A'})</span>
+                            </p>
                         </div>
-                        <div class="flex-shrink-0 flex space-x-2">
-                            <button data-id="${id}" class="edit-btn z-10 bg-yellow-500 hover:bg-yellow-600 text-white font-bold p-2 rounded-full transition duration-200" aria-label="Modifier l'item">
-                                ${iconEdit}
-                            </button>
-                            <button data-id="${id}" class="delete-btn z-10 bg-red-600 hover:bg-red-700 text-white font-bold p-2 rounded-full transition duration-200" aria-label="Supprimer l'item">
-                                ${iconDelete}
-                            </button>
+                        
+                        <!-- Séparateur -->
+                        <hr class="border-slate-700 my-3">
+
+                        <!-- Partie Bas: Évolution et Boutons -->
+                        <div class="w-full flex justify-between items-center">
+                            <div class="flex items-center space-x-2 ${colorClass}">
+                                ${icon}
+                                <span class="text-lg font-bold">${percent}</span>
+                            </div>
+                            <div class="flex-shrink-0 flex space-x-2">
+                                <button data-id="${id}" class="edit-btn z-10 bg-yellow-500 hover:bg-yellow-600 text-white font-bold p-2 rounded-full transition duration-200" aria-label="Modifier l'item">
+                                    ${iconEdit}
+                                </button>
+                                <button data-id="${id}" class="delete-btn z-10 bg-red-600 hover:bg-red-700 text-white font-bold p-2 rounded-full transition duration-200" aria-label="Supprimer l'item">
+                                    ${iconDelete}
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                `;
-                
-                itemList.appendChild(itemCard);
+                    `;
+                    
+                    itemList.appendChild(itemCard);
 
-                // --- Ajout des écouteurs d'événements ---
-                // Bouton Supprimer
-                itemCard.querySelector('.delete-btn').addEventListener('click', (e) => {
-                    e.stopPropagation(); // Empêche le clic de se propager à la carte
-                    handleDeleteItem(id, item.name);
-                });
-
-                // Bouton Modifier
-                itemCard.querySelector('.edit-btn').addEventListener('click', (e) => {
-                    e.stopPropagation(); // Empêche le clic de se propager à la carte
-                    handleOpenEditModal(id, item);
-                });
-
-                // Clic sur la carte (pour le graphique)
-                itemCard.addEventListener('click', (e) => {
-                    // Ne s'active que si on ne clique pas sur un bouton
-                    if (!e.target.closest('.delete-btn') && !e.target.closest('.edit-btn')) {
+                    // Attacher les écouteurs d'événements
+                    
+                    // Clic sur la carte (pour graphique)
+                    itemCard.addEventListener('click', () => {
                         handleShowChart(id, item);
-                    }
+                    });
+
+                    // Bouton Supprimer
+                    itemCard.querySelector('.delete-btn').addEventListener('click', (e) => {
+                        e.stopPropagation(); // Empêche le clic de se propager à la carte
+                        handleDeleteItem(id, item.name);
+                    });
+
+                    // Bouton Modifier
+                    itemCard.querySelector('.edit-btn').addEventListener('click', (e) => {
+                        e.stopPropagation(); // Empêche le clic de se propager à la carte
+                        handleOpenEditModal(id, item);
+                    });
                 });
+
+                // Mettre à jour le récapitulatif global
+                updateGlobalSummary(itemDocs);
+
+            }, (error) => {
+                console.error("Erreur écoute items: ", error);
+                loadingMessage.textContent = "Erreur: Impossible de charger les items.";
             });
         }
 
-        // --- Logique Firestore ---
-        function loadItems(uid) {
-            try {
-                // Modification: Utiliser un chemin plus simple
-                const itemsCollectionRef = collection(db, 'users', uid, 'pokemonItems');
-                const q = query(itemsCollectionRef); // Pas de orderBy pour éviter erreur d'index
-                onSnapshot(q, (snapshot) => renderItems(snapshot.docs), (error) => {
-                    console.error("Erreur écoute items: ", error);
-                });
-            } catch (error) {
-                console.error("Erreur setup 'loadItems': ", error);
-            }
-        }
-
-        // *** FONCTION AJOUTÉE ***
+        // Ajoute un nouvel item
         async function handleAddItem(e) {
             e.preventDefault();
             if (!userId) { showMessage(addMessageBox, "Non authentifié.", true); return; }
@@ -482,14 +487,16 @@
 
                 showMessage(addMessageBox, "Item ajouté !", false);
                 addItemForm.reset();
-                addModal.classList.add('hidden');
+                setTimeout(() => {
+                    addModal.classList.add('hidden');
+                    showMessage(addMessageBox, "", false); // Vider msg box
+                }, 1000);
 
             } catch (error) {
                 console.error("Erreur ajout item: ", error);
                 showMessage(addMessageBox, "Erreur lors de l'ajout.", true);
             }
         }
-        // *** FIN FONCTION AJOUTÉE ***
 
         async function handleDeleteItem(id, name) {
             if (!userId) return;
@@ -554,11 +561,14 @@
                 }
                 
                 showMessage(editMessageBox, "Modifications enregistrées !", false);
-                editModal.classList.add('hidden');
+                setTimeout(() => {
+                    editModal.classList.add('hidden');
+                    showMessage(editMessageBox, "", false); // Vider msg box
+                }, 1000);
 
             } catch (error) {
-                console.error("Erreur sauvegarde: ", error);
-                showMessage(editMessageBox, "Erreur sauvegarde.", true);
+                console.error("Erreur modification: ", error);
+                showMessage(editMessageBox, "Erreur lors de la sauvegarde.", true);
             }
         }
 
@@ -578,19 +588,17 @@
         }
 
         async function handleShowChart(id, item) {
-            if (!userId) return;
-            chartItemName.textContent = `Historique de: ${item.name}`;
+            chartItemName.textContent = item.name;
             
             try {
                 // 1. Récupérer l'historique
                 // Modification: Utiliser un chemin plus simple
-                const historyRef = collection(db, 'users', userId, 'pokemonItems', id, 'valueHistory');
-                const historyQuery = query(historyRef); // Pas de orderBy
+                const historyCollectionRef = collection(db, 'users', userId, 'pokemonItems', id, 'valueHistory');
+                const historyQuery = query(historyCollectionRef);
                 const snapshot = await getDocs(historyQuery);
-                
-                // 2. Trier les données en JS car Fimrebase requiert un index pour orderBy
+
                 const historyData = snapshot.docs
-                    .map(doc => doc.data())
+                    .map(d => d.data())
                     .filter(d => d.date) // S'assurer que la date existe
                     .sort((a, b) => a.date.seconds - b.date.seconds);
 
@@ -612,23 +620,15 @@
                     type: 'line',
                     data: {
                         labels: labels,
-                        datasets: [
-                            {
-                                label: 'Cote Actuelle (€)',
-                                data: values,
-                                borderColor: 'rgb(59, 130, 246)', // Bleu
-                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                fill: true,
-                                tension: 0.1
-                            },
-                            {
-                                label: 'Prix Achat (€)',
-                                data: Array(labels.length).fill(item.purchasePrice),
-                                borderColor: 'rgb(234, 179, 8)', // Jaune
-                                borderDash: [5, 5],
-                                fill: false
-                            }
-                        ]
+                        datasets: [{
+                            label: 'Valeur (€)',
+                            data: values,
+                            borderColor: '#3b82f6', // blue-500
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.1,
+                            fill: true
+                        }]
                     },
                     options: {
                         responsive: true,
@@ -639,10 +639,11 @@
                     }
                 });
 
+                // 5. Afficher le modal
                 chartModal.classList.remove('hidden');
 
             } catch (error) {
-                console.error("Erreur chargement graphique: ", error);
+                console.error("Erreur affichage graphique: ", error);
             }
         }
 
@@ -677,6 +678,53 @@
             });
         }
 
+        // --- Fonctions utilitaires ---
+        
+        // Calcule le % de changement et retourne la classe de couleur
+        function calculateChange(initial, current) {
+            if (initial === 0) return { percent: "N/A", colorClass: "text-slate-400", icon: iconNeutral };
+            const change = ((current - initial) / initial) * 100;
+            const percent = `${change > 0 ? '+' : ''}${change.toFixed(2)}%`;
+            let colorClass = "text-slate-400";
+            let icon = iconNeutral;
+
+            if (change > 0) {
+                colorClass = "text-green-500";
+                icon = iconUp;
+            } else if (change < 0) {
+                colorClass = "text-red-500";
+                icon = iconDown;
+            }
+            return { percent, colorClass, icon };
+        }
+        
+        // Affiche un message dans une message box
+        function showMessage(element, message, isError) {
+            element.textContent = message;
+            element.className = isError ? 'text-center text-sm mt-2 h-4 text-red-500' : 'text-center text-sm mt-2 h-4 text-green-500';
+        }
+
+        // Met à jour le récapitulatif global
+        function updateGlobalSummary(itemDocs) {
+            let totalPurchase = 0;
+            let totalValue = 0;
+
+            itemDocs.forEach(doc => {
+                const item = doc.data();
+                totalPurchase += item.purchasePrice || 0;
+                totalValue += item.currentValue || 0;
+            });
+
+            globalPurchaseEl.textContent = `${totalPurchase.toFixed(2)} €`;
+            globalValueEl.textContent = `${totalValue.toFixed(2)} €`;
+
+            const { percent, colorClass, icon } = calculateChange(totalPurchase, totalValue);
+            
+            globalPerformanceEl.className = `flex items-center space-x-2 ${colorClass}`; // Appliquer la couleur
+            globalIconEl.innerHTML = icon;
+            globalPercentEl.textContent = percent;
+        }
+
         // --- Point d'entrée principal ---
         async function main() {
             try {
@@ -685,17 +733,18 @@
 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
+                        // Utilisateur connecté
                         userId = user.uid;
-                        userIdDisplay.textContent = userId;
-                        loadItems(userId);
+                        userIdDisplay.textContent = user.uid.substring(0, 8) + '...';
+                        listenToItems(userId);
                     } else {
-                        userId = null;
-                        userIdDisplay.textContent = 'Non connecté';
+                        // Utilisateur déconnecté, tentative de connexion
+                        userIdDisplay.textContent = "Connexion...";
                         await attemptSignIn();
                     }
                 });
-                
-                // --- Écouteurs d'événements globaux ---
+
+                // --- Écouteurs d'événements (Formulaires) ---
                 addItemForm.addEventListener('submit', handleAddItem);
                 editItemForm.addEventListener('submit', handleSaveEdit);
                 
@@ -729,10 +778,14 @@
                     addModal.classList.remove('hidden');
                 });
                 
-                // Fermer tous les modals
+                // Fermer avec les boutons "X"
                 allCloseModalBtns.forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        btn.closest('.fixed').classList.add('hidden');
+                    btn.addEventListener('click', (e) => {
+                        // Trouver le parent modal le plus proche et le cacher
+                        e.target.closest('.fixed').classList.add('hidden');
+                        if (e.target.closest('.fixed') === confirmDeleteModal) {
+                            deleteTargetId = null; // Annuler la suppression
+                        }
                     });
                 });
                 
@@ -762,17 +815,9 @@
             }
         }
         
-        async function attemptSignIn() {
-             try {
-                // Modification : Supprimer la vérification de __initial_auth_token
-                // car il ne correspond pas à votre projet Firebase personnel.
-                // Forcer l'authentification anonyme.
-                await signInAnonymously(auth);
-            } catch (error) {
-                console.error("Erreur d'authentification:", error);
-            }
-        }
+        // Lancer l'application
         main();
+
     </script>
 </body>
 </html>
